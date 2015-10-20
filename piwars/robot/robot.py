@@ -1,4 +1,5 @@
-#!python3
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 import os, sys
 import queue
 import shlex
@@ -7,10 +8,10 @@ import time
 
 import zmq
 
-from . import config
-from . import logging
+from .. import config
+from .. import logging
 log = logging.logger(__package__)
-from . import outputs
+from .. import outputs
 
 class RobotError(BaseException): pass
 

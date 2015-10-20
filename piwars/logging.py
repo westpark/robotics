@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#!python3
+#!/usr/bin/env python3
 import os, sys
 import logging
 import logging.handlers
