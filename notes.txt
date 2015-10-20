@@ -1,0 +1,27 @@
+Use zmq for queueing commands
+
+Inputs from:
+
+* Local control (eg buttons on the Robot)
+* Remote control (via zmq)
+* Sensors
+
+Commands to:
+
+* Physical device
+* Text
+* Turtle-based graphical output
+
+Programmes:
+
+* Remote-control only
+* Free Running
+* Line-following
+* Proximity
+* etc.
+
+
+Rename "robot" to "controller"
+"input" is a zmq socket
+"output" is an output object which will accept high-level commands, 
+  translating them into low-level instructions.
