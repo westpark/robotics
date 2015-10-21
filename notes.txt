@@ -14,6 +14,7 @@ Commands to:
 
 Programmes:
 
+* Instantiate remote control
 * Remote-control only
 * Free Running
 * Line-following
@@ -23,5 +24,6 @@ Programmes:
 
 Rename "robot" to "controller"
 "input" is a zmq socket
-"output" is an output object which will accept high-level commands, 
+"output" is an output object which will accept low-level commands, such as "stop-left", "forward-right"
+
   translating them into low-level instructions.

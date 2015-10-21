@@ -5,7 +5,7 @@ import shlex
 
 import zmq
 
-from . import config
+from .core import config
 
 def main():
     context = zmq.Context()

@@ -8,8 +8,8 @@ import time
 
 import zmq
 
-from .. import config
-from .. import logging
+from ..core import config
+from ..core import logging
 log = logging.logger(__package__)
 
 class ControllerError(Exception): pass

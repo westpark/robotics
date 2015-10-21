@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 
+from ..core import config
+from ..core import logging
+
 NEVER = object()
 
-class BaseOutput(object):
+class BaseRobot(object):
     
     def __init__(self):
         pass
