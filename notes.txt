@@ -1,4 +1,4 @@
-Use zmq for queueing commands
+Use zmq for queueing command
 
 Inputs from:
 
@@ -26,4 +26,7 @@ Rename "robot" to "controller"
 "input" is a zmq socket
 "output" is an output object which will accept low-level commands, such as "stop-left", "forward-right"
 
-  translating them into low-level instructions.
+Programme
+- input from sensors
+- input from remote socket
+- instantiate low-level driver, specific to robot
