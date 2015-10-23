@@ -18,8 +18,7 @@ class NoSuchRobotError(ControllerError): pass
 class Controller(object):
     
     def __init__(self, robot):
-        log.info("Starting Controller on %s:%s", listen_on_ip, listen_on_port)
-        log.info("Controlling %s", robot
+        log.info("Controlling %s", robot)
         self.stop_event = threading.Event()
         self.command_queue = queue.Queue()
         self.robot = robot
@@ -45,7 +44,7 @@ class Controller(object):
         action, params = self.parse_command(command)
         log.debug("Action = %s, Params = %s", action, params)
         try:
-            function = getattr(self.robot, "do_" + action, None)
+            function = getattr(self.robot, action, None)
             if function:
                 function(*params)
             else:
@@ -72,7 +71,7 @@ class Controller(object):
         if command is None:
             return
         else:
-            self.command_queue.put(command.lowercase().strip())
+            self.command_queue.put(command.lower().strip())
     
     def generate_commands(self):
         """Pull information from whatever sources (remote commands,

@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import os, sys
 import shlex
 
 import zmq
 
-from .core import config
+from piwars.core import config
 
 def main():
     context = zmq.Context()
@@ -21,9 +21,6 @@ def main():
         status = words[0]
         if len(words) > 1:
             info = words[1:]
-        if status == "finished":
-            print("Finished status received from robot")
-            break
 
 if __name__ == '__main__':
     main(*sys.argv[1:])

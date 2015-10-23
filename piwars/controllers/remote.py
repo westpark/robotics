@@ -19,6 +19,7 @@ class RemoteController(base.Controller):
         listen_on_ip=config.LISTEN_ON_IP, listen_on_port=config.LISTEN_ON_PORT
     ):
         super().__init__(robot)
+        log.info("Starting Controller on %s:%s", listen_on_ip, listen_on_port)
         self._init_socket(listen_on_ip, listen_on_port)
     
     def _init_socket(self, listen_on_ip, listen_on_port):
@@ -50,7 +51,7 @@ class RemoteController(base.Controller):
         log.debug("About to send reponse: %r", response_bytes)
         self.socket.send(response_bytes)
 
-    def get_remote_request(self):
+    def get_request(self):
         """Respond immediately to an incoming request and pass back the command received
         
         The REP/REQ socket model we're using with zmq requires that each
@@ -70,5 +71,5 @@ class RemoteController(base.Controller):
 
     def generate_commands(self):
         super().generate_commands()
-        self.queue_command(self.get_remote_request())
+        self.queue_command(self.get_request())
     

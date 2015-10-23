@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import argparse
 
 from .. import robots
@@ -14,12 +14,13 @@ if __name__ == '__main__':
     if not hasattr(robots, args.robot):
         raise RuntimeError("Invalid robot: %s" % args.robot)
     else:
-        robot = getattr(robots, args.robot)
+        module = getattr(robots, args.robot)
+        robot = module.Robot()
 
     if args.controller not in controllers:
         raise RuntimeError("Invalid controller: %s" % args.controller)
     else:
-        controller = getattr(controllers, controller)
+        controller = controllers[args.controller]
     
     robot_controller = controller(robot=robot)
     robot_controller.start()
