@@ -7,11 +7,17 @@ from . import base
 
 class Robot(base.BaseRobot):
 
-    def _forwards(self, left_or_right="both", stop_after_secs=base.NEVER):
-        print("Moving %s forwards..." % left_or_right)
+    def forward(self, *args):
+        print("forward", args)
 
-    def _backwards(self, left_or_right="both", stop_after_secs=base.NEVER):
-        print("Moving %s backwards..." % left_or_right)
-    
-    def stop(self, left_or_right="both"):
-        print("Stopping %s..." % left_or_right)
+    def backward(self, *args):
+        print("backward", args)
+
+    def left(self, *args):
+        print("left", args)
+
+    def right(self, *args):
+        print("right", args)
+
+    def stop(self, *args):
+        print("stop", args)
