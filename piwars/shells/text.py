@@ -3,19 +3,13 @@
 import os, sys
 import shlex
 
-import zmq
+from . import comms
 
-from piwars.core import config
-
-def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.REQ)
-    socket.connect("tcp://%s:%s" % (config.LISTEN_ON_IP, config.LISTEN_ON_PORT))
-
+def start():
+    sender = comms.Sender()
     while True:
         command = input("Command: ")
-        socket.send(command.encode(config.CODEC))
-        response = socket.recv().decode(config.CODEC)
+        response = sender.send(command)
         print("  ... %s" % response)
         words = shlex.split(response.lower())
         status = words[0]
@@ -23,4 +17,4 @@ def main():
             info = words[1:]
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    start(*sys.argv[1:])
