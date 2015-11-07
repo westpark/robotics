@@ -3,10 +3,10 @@
 import argparse
 
 from . import text
-#~ from . import snes
+from . import snes
 
 shells = {
-    #~ "snes" : snes,
+    "snes" : snes,
     "text" : text
 }
 
