@@ -1,8 +1,21 @@
+import os
 import pygame
+import time
 from . import comms
-sender = comms.Sender()
 
-#colors
+SPEED_STEP = 0.1
+TOP_SPEED = 1.0
+MAX_SPEED = 1.1
+MIN_SPEED = 0.31
+TURN_FRACTION = 0.25
+TURN_LEFT_COMMAND = "turn left {}".format(TURN_FRACTION)
+TURN_RIGHT_COMMAND = "turn right {}".format(TURN_FRACTION)
+FORWARD_COMMAND = "forward"
+BACK_COMMAND = "backward"
+STOP_COMMAND = "stop"
+
+HERE = os.path.dirname(__file__)
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
@@ -10,60 +23,43 @@ RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 BLUE = (0, 191, 255)
 
-#Images
-RIGHT_ARROW_IMAGE = "right_arrow.png"
-SNES_BACKGROUND_IMAGE = "controller.JPG"
-
-#Key commands
-FORWARD = "forward"
-BACK = "backward"
-LEFT = "left"
-RIGHT = "right"
-BLUE_KEY = "stop"
-RED_KEY = "stop"
-YELLOW_KEY = "stop"
-GREEN_KEY = "stop"
-LR_LEFT = None
-LR_RIGHT = None
-SELECT_KEY = "stop"
-START_KEY = "stop"
-
 #Key Classes
 class Key():
-	def __init__(self, image, xy_position, command):
+	def __init__(self, image, xy_position):
 		self.image = image
 		self.xy_position = xy_position
 		self.pressed = False
-		self.command = command
 
 class Arrow_Key(Key):
+	RIGHT_ARROW_IMAGE = os.path.join(HERE, "right_arrow.png")
 	def __init__(self, xy_position, rotation, command):
-		image = pygame.image.load(RIGHT_ARROW_IMAGE).convert()
+		image = pygame.image.load(self.RIGHT_ARROW_IMAGE).convert()
 		image.set_colorkey(BLACK)
-		image = pygame.transform.rotate(image, rotation) 
-		super().__init__(image, xy_position, command)
+		image = pygame.transform.rotate(image, rotation)
+		self.command = command
+		super().__init__(image, xy_position)
 		
 class Round_Key(Key):
-	def __init__(self, color, xy_position, command, radius=20 ):
-		diameter = 2*radius		 
+	def __init__(self, color, xy_position, radius=20):
+		diameter = 2*radius
 		image = pygame.Surface((diameter, diameter))
 		image.set_colorkey(BLACK)
 		pygame.draw.circle(image, color, [radius, radius], radius)
-		super().__init__(image, xy_position, command)
+		super().__init__(image, xy_position)
 
 class LR_Key(Key):
-	def __init__(self, xy_position, command, length=100):
+	def __init__(self, xy_position, length=100):
 		height = length/4
 		image = pygame.Surface((length, height))
 		image.fill(RED)
-		super().__init__(image, xy_position, command)
+		super().__init__(image, xy_position)
 		
 class Thin_Key(Key):
-	def __init__(self, xy_position, command, length=35):
+	def __init__(self, xy_position, length=35):
 		image = pygame.Surface((length, length))
 		image.set_colorkey(BLACK)
 		pygame.draw.line(image, RED, [0, length], [length, 0], 30)
-		super().__init__(image, xy_position, command)
+		super().__init__(image, xy_position)
 
 #Keypad Classes		
 class Keypad():
@@ -76,6 +72,14 @@ class Keypad():
 		self.device.init()
 		
 class Snes_Keypad(Keypad):
+	BACKGROUND_IMAGE = os.path.join(HERE,  "controller.JPG")
+	MAX_SPEED_BUTTON = 0
+	MIN_SPEED_BUTTON = 2
+	TURN_RIGHT_BUTTON = 1
+	TURN_LEFT_BUTTON = 3
+	SPEED_DOWN_BUTTON = 4
+	SPEED_UP_BUTTON = 5
+
 	def __init__(self, xy_position):
 		arrows_center_x = 85 + xy_position[0]
 		arrows_center_y = 275 + xy_position[1]
@@ -107,29 +111,29 @@ class Snes_Keypad(Keypad):
 		start_key_y = 294
 		axes = [
 		[
-		Arrow_Key([left_arrow_x, left_arrow_y], 180, LEFT),
-		Arrow_Key([right_arrow_x, right_arrow_y], 0, RIGHT),
+		Arrow_Key([left_arrow_x, left_arrow_y], 180, TURN_LEFT_COMMAND),
+		Arrow_Key([right_arrow_x, right_arrow_y], 0, TURN_RIGHT_COMMAND),
 		],
 		[
-		Arrow_Key([up_arrow_x, up_arrow_y], 90, FORWARD),
-		Arrow_Key([down_arrow_x, down_arrow_y], -90, BACK),
+		Arrow_Key([up_arrow_x, up_arrow_y], 90, FORWARD_COMMAND),
+		Arrow_Key([down_arrow_x, down_arrow_y], -90, BACK_COMMAND),
 		], 
 		]
 		
 		keys = [ 
-		Round_Key(BLUE, [x_key_x, x_key_y], BLUE_KEY),
-		Round_Key(RED, [a_key_x, a_key_y], RED_KEY),
-		Round_Key(YELLOW, [b_key_x, b_key_y], YELLOW_KEY),
-		Round_Key(GREEN, [y_key_x, y_key_y], GREEN_KEY), 
-		LR_Key([l_key_x, l_key_y], LR_LEFT),
-		LR_Key([r_key_x, r_key_y], LR_RIGHT),
+		Round_Key(BLUE, [x_key_x, x_key_y]),
+		Round_Key(RED, [a_key_x, a_key_y]),
+		Round_Key(YELLOW, [b_key_x, b_key_y]),
+		Round_Key(GREEN, [y_key_x, y_key_y]), 
+		LR_Key([l_key_x, l_key_y]),
+		LR_Key([r_key_x, r_key_y]),
 		"BLANK", #These keys don't exist on the snes keypad
 		"BLANK", #These keys don't exist on the snes keypad
-		Thin_Key([select_key_x, select_key_y], SELECT_KEY),
-		Thin_Key([start_key_x, start_key_y], START_KEY),
+		Thin_Key([select_key_x, select_key_y]),
+		Thin_Key([start_key_x, start_key_y]),
 		]
 		
-		background_image = pygame.image.load(SNES_BACKGROUND_IMAGE).convert()
+		background_image = pygame.image.load(self.BACKGROUND_IMAGE).convert()
 		background_image.set_colorkey(WHITE)
 		super().__init__(keys, axes, background_image, xy_position)
 
@@ -148,45 +152,58 @@ clock = pygame.time.Clock()
  
 # -------- Main Program Loop -----------
 keypad = Snes_Keypad([0,0])
-done = False
+sender = comms.Sender()
 buttons = keypad.device.get_numbuttons()
 axes = keypad.device.get_numaxes()
+speed = TOP_SPEED
 
-SPEED_STEP = 0.2
-speed = 1.0
-
+done = False
 while not done:
 	# --- Main event loop
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			done = True
-		if event.type == 10:
-			if keypad.device.get_button(4):
+		if event.type == pygame.JOYBUTTONDOWN:
+			if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED:
 				speed -= SPEED_STEP
-				print("Left:", speed)
-			if keypad.device.get_button(5):
+			elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < MAX_SPEED:
 				speed += SPEED_STEP
-				print("Right:", speed)
+			if keypad.device.get_button(keypad.MAX_SPEED_BUTTON):
+				speed = TOP_SPEED
+			elif keypad.device.get_button(keypad.MIN_SPEED_BUTTON):
+				speed = MIN_SPEED
+			if keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
+				sender.send(TURN_LEFT_COMMAND)
+				time.sleep(0.5)
+				sender.send(STOP_COMMAND)
+			elif keypad.device.get_button(keypad.TURN_RIGHT_BUTTON):
+				sender.send(TURN_RIGHT_COMMAND)
+		if event.type == pygame.JOYAXISMOTION:
+			axis_total = 0
+			for i in range(axes):
+				axis = keypad.device.get_axis(i)
+				axis_total += abs(axis)
+				if axis > 0.1:
+					command = "{} {}".format(keypad.axes[i][1].command, speed)
+					sender.send(command)
+				elif axis < -0.1:
+					command = "{} {}".format(keypad.axes[i][0].command, speed)
+					sender.send(command)
+			if axis_total < 0.1:
+				sender.send(STOP_COMMAND)
+		print("Speed =", speed)
+
 		screen.fill(WHITE)
 		screen.blit(keypad.background_image, keypad.xy_position)
 	for i in range(buttons):
 		button = keypad.device.get_button(i)
-		if button and keypad.keys[i].command:
-			print("KEY COMMAND:", keypad.keys[i].command)
-			sender.send(keypad.keys[i].command)
+		if button:
 			screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
 		if axis > 0.1:
-			command = "{} {}".format(keypad.axes[i][1].command, speed)
-			print("COMMAND1:", command)
-			sender.send(command)
 			screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
 		elif axis < -0.1:
-			# command = "{} {}".format(keypad.axes[i][0].command, speed)
-			command = "%s %s" % (keypad.axes[i][0].command, speed)
-			print("COMMAND2:", command)
-			sender.send(command)
 			screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
 	pygame.display.flip()
 	clock.tick(60)
