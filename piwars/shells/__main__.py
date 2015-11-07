@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from . import snes, text
+from . import text
+#~ from . import snes
 
 shells = {
-    "snes" : snes,
+    #~ "snes" : snes,
     "text" : text
 }
 

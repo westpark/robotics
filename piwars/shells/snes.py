@@ -1,5 +1,6 @@
 import pygame
-import shell
+from . import comms
+sender = comms.Sender()
 
 #colors
 BLACK = (0, 0, 0)
@@ -172,20 +173,20 @@ while not done:
 		button = keypad.device.get_button(i)
 		if button and keypad.keys[i].command:
 			print("KEY COMMAND:", keypad.keys[i].command)
-			shell.send(keypad.keys[i].command)
+			sender.send(keypad.keys[i].command)
 			screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
 		if axis > 0.1:
 			command = "{} {}".format(keypad.axes[i][1].command, speed)
 			print("COMMAND1:", command)
-			shell.send(command)
+			sender.send(command)
 			screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
 		elif axis < -0.1:
 			# command = "{} {}".format(keypad.axes[i][0].command, speed)
 			command = "%s %s" % (keypad.axes[i][0].command, speed)
 			print("COMMAND2:", command)
-			shell.send(command)
+			sender.send(command)
 			screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
 	pygame.display.flip()
 	clock.tick(60)
