@@ -1,5 +1,9 @@
 Use zmq for queueing command
 
+To run the "text robot": py -3 -mpiwars.controllers
+
+To send commands: py -3 shell.py
+
 Inputs from:
 
 * Local control (eg buttons on the Robot)
