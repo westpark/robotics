@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+
 from gpiozero import Robot
 
 from ..core import config
@@ -30,12 +32,6 @@ class Robot(base.BaseRobot):
         speed=float(speed)
         print('right', speed)
         self.robot.right(speed)
-
-    def turn(self, direction, extent=1.0, speed=1.0):
-        extent = float(extent)
-        speed = float(speed)
-        print("turn", direction, extent, speed)
-        self.robot.turn(direction, extent, speed)
         
     def stop(self):
         print('stop')
