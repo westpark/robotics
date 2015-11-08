@@ -8,10 +8,10 @@ class Robot(gpiozero.Robot):
     
     def turn(self, direction, extent=1.0, speed=1.0):
         if direction == "left":
-            self._left.forward(speed * (1.0 - extent))
-            self._right.backward(speed * extent)
-        elif direction == "right":
+            self._left.forward(speed * extent)
             self._right.forward(speed * (1.0 - extent))
-            self._left.backward(speed * extent)
+        elif direction == "right":
+            self._right.forward(speed * extent)
+            self._left.forward(speed * (1.0 - extent))
         else:
             raise RuntimeError("No such direction: %s" % direction)

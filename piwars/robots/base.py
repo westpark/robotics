@@ -8,8 +8,7 @@ class BaseRobot(object):
     
     def __init__(self):
         pass
-
-   
+        
     def forward(self, speed=1):
         print('forwards')
         speed=float(speed)
@@ -26,6 +25,9 @@ class BaseRobot(object):
         print('right')
         speed=float(speed)
         
+    def turn(direction, extent):
+        raise NotImplementedError
+
     def stop(self):
         print('stop')
         
