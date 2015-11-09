@@ -25,4 +25,4 @@ if __name__ == '__main__':
     else:
         controller = module.Controller(robot)
     
-    controller.start()
+    controller.run()
