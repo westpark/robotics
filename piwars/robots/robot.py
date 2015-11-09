@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-import gpiozero
+try:
+    import gpiozero
+except ImportError:
+    from . import _gpiozero_stub as gpiozero
 
 class Robot(gpiozero.Robot):
 
