@@ -24,7 +24,6 @@ class Sensor(object):
         self.trigger_pin = trigger_pin
         self.echo_pin = echo_pin
         self.initialise_pins()
-        self.steady_trigger()
 
     def initialise_pins(self):
         """Intialise the GPIO pins we're using
@@ -119,8 +118,6 @@ if __name__ == '__main__':
     sensor2 = Sensor(15, 18,"Left")
     sensors = [sensor1, sensor2]
     for sensor in sensors:
-        sensor.initialise_GPIO()
-        sensor.initialise_pins()
         sensor.steady_trigger()
     
     while True:
