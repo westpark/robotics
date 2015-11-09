@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os, sys
+import atexit
 
 import RPi.GPIO as GPIO
+GPIO.setmode(GPIO.BCM)
+atexit.register(GPIO.cleanup)
+
 import time
 
 from ..core import config
@@ -19,13 +23,8 @@ class Sensor(object):
         self.name = name
         self.trigger_pin = trigger_pin
         self.echo_pin = echo_pin
-
-    def initialise_GPIO(self):
-        """Initialise the GPIO
-        
-        We're going to be using BCM numbering
-        """
-        GPIO.setmode(GPIO.BCM)
+        self.initialise_pins()
+        self.steady_trigger()
 
     def initialise_pins(self):
         """Intialise the GPIO pins we're using
@@ -124,16 +123,11 @@ if __name__ == '__main__':
         sensor.initialise_pins()
         sensor.steady_trigger()
     
-    try:
-        
-        while True:
-            for s in sensors:
-                distance_mm = s.find_distance_mm()
-                print(s.name, "%5.2fmm" % distance_mm)
-                if distance_mm < THRESHOLD_MM:
-                    print ("stop")
-                    break
-            time.sleep(0.1)
-            
-    finally:
-        GPIO.cleanup()
+    while True:
+        for s in sensors:
+            distance_mm = s.find_distance_mm()
+            print(s.name, "%5.2fmm" % distance_mm)
+            if distance_mm < THRESHOLD_MM:
+                print ("stop")
+                break
+        time.sleep(0.1)
