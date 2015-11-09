@@ -1,36 +1,28 @@
-Use zmq for queueing command
-
 To run the "text robot": py -3 -mpiwars.controllers
-
 To send commands: py -3 shell.py
 
-Inputs from:
+CHALLENGES
+==========
 
-* Local control (eg buttons on the Robot)
-* Remote control (via zmq)
-* Sensors
+* Skittles: remote control; needs some kind of front "bumper" (ask Chus?)
 
-Commands to:
+* Line-follower: complex; needs a line-follower sensor which we don't have; might be able to use camera (which we don't have yet); the boys are more likely to get interested in this
 
-* Physical device
-* Text
-* Turtle-based graphical output
+* Pi Noon: remote control; need means of holding a wire (could be same bumper as for skittles)
 
-Programmes:
+* Obstacle course: remote-control
 
-* Instantiate remote control
-* Remote-control only
-* Free Running
-* Line-following
-* Proximity
-* etc.
+* Straight-line course: prefer autonomous; could be remote-control; use 2 sensors side-by-side to correct for swerve
 
+* 3-point turn: either needs line-follower or use absolute distances; need to calibrate speed
 
-Rename "robot" to "controller"
-"input" is a zmq socket
-"output" is an output object which will accept low-level commands, such as "stop-left", "forward-right"
+* Proximity detector: autonomous; as per straight-line, need 2 sensors to allow for swerve
 
-Programme
-- input from sensors
-- input from remote socket
-- instantiate low-level driver, specific to robot
+RESPONSIBILITIES
+================
+
+Steve: all remote-control -- Skittles; Pi Noon; Obstacle Course
+Steve: calibrate speed/distance to feed into 3-point turn
+Tim: Line-follower; straight-line; 3-point turn; Proximity
+Tim: calibrate sensors so we can use them side-by-side
+Tim: blog!
