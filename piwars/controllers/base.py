@@ -16,6 +16,13 @@ class NoSuchActionError(ControllerError): pass
 class NoSuchRobotError(ControllerError): pass
 
 class Controller(object):
+    """A controller is effectively a program running on the robot. It receives
+    a queue of commands, and either handles each one internally or passes it onto
+    the robot it was started with.
+    
+    Commands are a series of space-separated words, encoded according to config.ENCODING.
+    The first word is the action; all other words (if any) are passed along as parameters.
+    """
     
     def __init__(self, robot):
         log.info("Controlling %s", robot)
@@ -33,6 +40,7 @@ class Controller(object):
         """Pass a command along with its params to the robot
         
         If the command is blank, succeed silently
+        Look for a handler (1) in the current controller; (2) in the current controller's robot
         If the command has no handler, raise NoSuchActionError
         Cascade KeyboardInterrupt
         If the handler raises an exception, fail with the exception message
@@ -44,7 +52,9 @@ class Controller(object):
         action, params = self.parse_command(command)
         log.debug("Action = %s, Params = %s", action, params)
         try:
-            function = getattr(self.robot, action, None)
+            function = getattr(self, "handle_" % action, None)
+            if not function:
+                function = getattr(self.robot, action, None)
             if function:
                 function(*params)
             else:
@@ -95,7 +105,7 @@ class Controller(object):
     #
     # Main loop
     #
-    def start(self):
+    def run(self):
         """Handle robot commands placed on the queue by the .generate_commands
         processor specific to this programme. 
         """
