@@ -3,11 +3,12 @@ import pygame
 import time
 from . import comms
 
+TOLERANCE = 0.01
 SPEED_STEP = 0.1
 TOP_SPEED = 1.0
-MAX_SPEED = 1.1
-MIN_SPEED = 0.31
+MIN_SPEED = 0.30
 TURN_FRACTION = 0.25
+NINETY_DEGREE_TURN_TIME = 0.5
 TURN_LEFT_COMMAND = "turn left {}".format(TURN_FRACTION)
 TURN_RIGHT_COMMAND = "turn right {}".format(TURN_FRACTION)
 FORWARD_COMMAND = "forward"
@@ -23,7 +24,7 @@ RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 BLUE = (0, 191, 255)
 
-#Key Classes
+# --- Key Classes
 class Key():
 	def __init__(self, image, xy_position):
 		self.image = image
@@ -61,11 +62,11 @@ class Thin_Key(Key):
 		pygame.draw.line(image, RED, [0, length], [length, 0], 30)
 		super().__init__(image, xy_position)
 
-#Keypad Classes		
+# --- Keypad Classes		
 class Keypad():
 	def __init__(self, keys, axes, background_image, xy_position):
 		self.keys = keys
-		self. axes = axes
+		self.axes = axes
 		self.background_image = background_image
 		self.xy_position = xy_position
 		self.device = pygame.joystick.Joystick(0)
@@ -73,7 +74,7 @@ class Keypad():
 		
 class Snes_Keypad(Keypad):
 	BACKGROUND_IMAGE = os.path.join(HERE,  "controller.JPG")
-	MAX_SPEED_BUTTON = 0
+	TOP_SPEED_BUTTON = 0
 	MIN_SPEED_BUTTON = 2
 	TURN_RIGHT_BUTTON = 1
 	TURN_LEFT_BUTTON = 3
@@ -127,8 +128,8 @@ class Snes_Keypad(Keypad):
 		Round_Key(GREEN, [y_key_x, y_key_y]), 
 		LR_Key([l_key_x, l_key_y]),
 		LR_Key([r_key_x, r_key_y]),
-		"BLANK", #These keys don't exist on the snes keypad
-		"BLANK", #These keys don't exist on the snes keypad
+		"BLANK", #This key doesn't exist on the snes keypad
+		"BLANK", #This key doesn't exist on the snes keypad
 		Thin_Key([select_key_x, select_key_y]),
 		Thin_Key([start_key_x, start_key_y]),
 		]
@@ -137,26 +138,67 @@ class Snes_Keypad(Keypad):
 		background_image.set_colorkey(WHITE)
 		super().__init__(keys, axes, background_image, xy_position)
 
+# --- Event Result functions
+def joybuttondown_results(keypad):
+	if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED + TOLERANCE:
+		speed -= SPEED_STEP
+	elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < TOP_SPEED + TOLERANCE:
+		speed += SPEED_STEP
+	if keypad.device.get_button(keypad.TOP_SPEED_BUTTON):
+		speed = TOP_SPEED
+	elif keypad.device.get_button(keypad.MIN_SPEED_BUTTON):
+		speed = MIN_SPEED
+	if keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
+		sender.send(TURN_LEFT_COMMAND)
+		time.sleep(NINETY_DEGREE_TURN_TIME)
+		sender.send(STOP_COMMAND)
+	elif keypad.device.get_button(keypad.TURN_RIGHT_BUTTON):
+		sender.send(TURN_RIGHT_COMMAND)
+
+def joyaxismotion_results(keypad):
+	axis_total = 0
+	for i in range(axes):
+		axis = keypad.device.get_axis(i)
+		axis_total += abs(axis)
+		if axis > TOLERANCE:
+			command = "{} {}".format(keypad.axes[i][1].command, speed)
+			sender.send(command)
+		elif axis < -TOLERANCE:
+			command = "{} {}".format(keypad.axes[i][0].command, speed)
+			sender.send(command)
+	if axis_total < TOLERANCE:
+		sender.send(STOP_COMMAND)
+
+def speedo(speed, font):
+	image = pygame.Surface((100, 100))
+	image.fill(BLACK)
+	text = font.render("Speed", True, WHITE)
+	show_speed = font.render(str(speed), True, RED)
+	image.blit(text,[10, 5])
+	image.blit(show_speed, [25, 50])
+	return image
+
+def display_command(command, font):
+	image = pygame.Surface((500, 40))
+	image.fill(BLACK)
+	text = font.render("COMMAND:", True, WHITE)
+	show = font.render(command, True, RED)
+	image.blit(text,[10, 5])
+	image.blit(show, [160, 5])
+	return image
 	
 pygame.init()
- 
-# Set the width and height of the screen [width, height]
 size = (500, 500)
 screen = pygame.display.set_mode(size)
- 
-pygame.display.set_caption("My Game")
- 
-# Loop until the user clicks the close button.
- 
+font = pygame.font.Font(None, 36)
+pygame.display.set_caption("Robot Controller")
 clock = pygame.time.Clock()
- 
-# -------- Main Program Loop -----------
-keypad = Snes_Keypad([0,0])
 sender = comms.Sender()
+keypad = Snes_Keypad([0,0])
 buttons = keypad.device.get_numbuttons()
 axes = keypad.device.get_numaxes()
-speed = TOP_SPEED
 
+speed = TOP_SPEED
 done = False
 while not done:
 	# --- Main event loop
@@ -164,49 +206,24 @@ while not done:
 		if event.type == pygame.QUIT:
 			done = True
 		if event.type == pygame.JOYBUTTONDOWN:
-			if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED:
-				speed -= SPEED_STEP
-			elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < MAX_SPEED:
-				speed += SPEED_STEP
-			if keypad.device.get_button(keypad.MAX_SPEED_BUTTON):
-				speed = TOP_SPEED
-			elif keypad.device.get_button(keypad.MIN_SPEED_BUTTON):
-				speed = MIN_SPEED
-			if keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
-				sender.send(TURN_LEFT_COMMAND)
-				time.sleep(0.5)
-				sender.send(STOP_COMMAND)
-			elif keypad.device.get_button(keypad.TURN_RIGHT_BUTTON):
-				sender.send(TURN_RIGHT_COMMAND)
+			joybuttondown_results(keypad)
 		if event.type == pygame.JOYAXISMOTION:
-			axis_total = 0
-			for i in range(axes):
-				axis = keypad.device.get_axis(i)
-				axis_total += abs(axis)
-				if axis > 0.1:
-					command = "{} {}".format(keypad.axes[i][1].command, speed)
-					sender.send(command)
-				elif axis < -0.1:
-					command = "{} {}".format(keypad.axes[i][0].command, speed)
-					sender.send(command)
-			if axis_total < 0.1:
-				sender.send(STOP_COMMAND)
-		print("Speed =", speed)
-
-		screen.fill(WHITE)
-		screen.blit(keypad.background_image, keypad.xy_position)
+			joyaxismotion_results(keypad)
+	# --- Update Display
+	screen.fill(WHITE)
+	screen.blit(keypad.background_image, keypad.xy_position)
 	for i in range(buttons):
 		button = keypad.device.get_button(i)
 		if button:
 			screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
-		if axis > 0.1:
+		if axis > TOLERANCE:
 			screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
-		elif axis < -0.1:
+		elif axis < -TOLERANCE:
 			screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
+	screen.blit(speedo(speed, font), [10,10])
+	screen.blit(display_command(str(speed), font), [0,460])
 	pygame.display.flip()
 	clock.tick(60)
- 
 pygame.quit()
- 
