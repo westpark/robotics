@@ -11,7 +11,7 @@ from ..core import config, exc, logging
 from . import base
 log = logging.logger(__package__)
 
-class RemoteController(base.Controller):
+class Controller(base.Controller):
     
     def __init__(
         self,

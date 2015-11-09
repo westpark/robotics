@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
+import importlib
 
 from .. import robots
-from . import controllers
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -11,16 +11,18 @@ if __name__ == '__main__':
     parser.add_argument("--robot", default="text")
     args = parser.parse_args()
     
-    if not hasattr(robots, args.robot):
+    try:
+        module = importlib.import_module(".%s" % args.robot, "piwars.robots")
+    except ImportError:
         raise RuntimeError("Invalid robot: %s" % args.robot)
     else:
-        module = getattr(robots, args.robot)
         robot = module.Robot()
 
-    if args.controller not in controllers:
+    try:
+        module = importlib.import_module(".%s" % args.controller, "piwars.controllers")
+    except ImportError:
         raise RuntimeError("Invalid controller: %s" % args.controller)
     else:
-        controller = controllers[args.controller]
+        controller = module.Controller(robot)
     
-    robot_controller = controller(robot=robot)
-    robot_controller.start()
+    controller.start()

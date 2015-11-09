@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
-
-shells = {}
-from . import text
-shells['text'] = text
-try:
-    from . import snes
-except ImportError:
-    shells['snes'] = None
-else:
-    shells['snes'] = snes
+import importlib
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--shell", default="text")
     args = parser.parse_args()
 
-    shell = shells.get(args.shell)
-    if shell:
-        shell.start()
-    else:
+    try:
+        module = importlib.import_module(".%s" % args.shell, "piwars.shells")
+    except ImportError:
         raise RuntimeError("Invalid shell: %s" % args.shell)
+    else:
+        shell = module.Shell()
+    
+    shell.start()
