@@ -101,6 +101,9 @@ class Controller(object):
         """
         pass
     
+    def finished(self):
+        return self.stop_event.is_set()
+    
     #
     # Main loop
     #
@@ -108,7 +111,7 @@ class Controller(object):
         """Handle robot commands placed on the queue by the .generate_commands
         processor specific to this programme. 
         """
-        while not self.stop_event.is_set():
+        while not self.finished():
             try:
                 self.generate_commands()
                 self.handle_commands()
