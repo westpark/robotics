@@ -36,7 +36,7 @@ class Controller(object):
         words = shlex.split(command.lower())
         return words[0], words[1:]
     
-    def dispatch(self, command):
+    def dispatch(self, action, params):
         """Pass a command along with its params to the robot
         
         If the command is blank, succeed silently
@@ -49,7 +49,6 @@ class Controller(object):
         if not command:
             return "OK"
         
-        action, params = self.parse_command(command)
         log.debug("Action = %s, Params = %s", action, params)
         try:
             function = getattr(self, "handle_" % action, None)
@@ -69,19 +68,19 @@ class Controller(object):
     def handle_commands(self):
         while True:
             try:
-                command = self.command_queue.get_nowait()
+                action, params= self.command_queue.get_nowait()
             except queue.Empty:
                 return
             else:
-                self.dispatch(command)
+                self.dispatch(action, params)
 
-    def queue_command(self, command):
+    def queue_command(self, action, params):
         """Normalise and queue a non-null command.
         """
-        if command is None:
+        if action is None:
             return
         else:
-            self.command_queue.put(command.lower().strip())
+            self.command_queue.put((action, params))
     
     def generate_commands(self):
         """Pull information from whatever sources (remote commands,

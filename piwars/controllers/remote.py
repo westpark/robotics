@@ -71,5 +71,6 @@ class Controller(base.Controller):
 
     def generate_commands(self):
         super().generate_commands()
-        self.queue_command(self.get_request())
-    
+        command = self.get_request()
+        action, params = self.parse_command(command)
+        self.queue_command(action, params)
