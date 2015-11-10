@@ -232,5 +232,10 @@ def main():
 		clock.tick(60)
 	pygame.quit()
 	
+class Shell(object):
+	def start(self):
+		main()
+
 if __name__ == "__main__":
     main()
+	
