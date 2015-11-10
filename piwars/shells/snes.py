@@ -139,7 +139,7 @@ class Snes_Keypad(Keypad):
 		super().__init__(keys, axes, background_image, xy_position)
 
 # --- Event Result functions
-def joybuttondown_results(keypad, speed):
+def joybuttondown_results(keypad, speed, sender):
 	if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED + TOLERANCE:
 		speed -= SPEED_STEP
 	elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < TOP_SPEED + TOLERANCE:
@@ -156,7 +156,7 @@ def joybuttondown_results(keypad, speed):
 		sender.send(TURN_RIGHT_COMMAND)
 	return speed
 
-def joyaxismotion_results(keypad, speed):
+def joyaxismotion_results(keypad, axes, speed, sender):
 	axis_total = 0
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
@@ -179,16 +179,6 @@ def speedo(speed):
 	image.blit(text,[10, 5])
 	image.blit(show_speed, [25, 50])
 	return image
-
-def display_command(command):
-	font = pygame.font.Font(None, 36)
-	image = pygame.Surface((500, 40))
-	image.fill(BLACK)
-	text = font.render("COMMAND:", True, WHITE)
-	show = font.render(command, True, RED)
-	image.blit(text,[10, 5])
-	image.blit(show, [160, 5])
-	return image
 	
 def main():
 
@@ -210,9 +200,9 @@ def main():
 			if event.type == pygame.QUIT:
 				done = True
 			if event.type == pygame.JOYBUTTONDOWN:
-				speed = joybuttondown_results(keypad, speed)
+				speed = joybuttondown_results(keypad, speed, sender)
 			if event.type == pygame.JOYAXISMOTION:
-				joyaxismotion_results(keypad, speed)
+				joyaxismotion_results(keypad, axes, speed, sender)
 		# --- Update Display
 		screen.fill(WHITE)
 		screen.blit(keypad.background_image, keypad.xy_position)
@@ -227,7 +217,6 @@ def main():
 			elif axis < -TOLERANCE:
 				screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
 		screen.blit(speedo(speed), [10,10])
-		screen.blit(display_command(str(speed)), [0,460])
 		pygame.display.flip()
 		clock.tick(60)
 	pygame.quit()
