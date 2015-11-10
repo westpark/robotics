@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os, sys
+import fnmatch
 import queue
 import shlex
 import threading
@@ -12,6 +13,8 @@ from . import base
 log = logging.logger(__package__)
 
 class Controller(base.Controller):
+    
+    _permitted_commands = ["*"]
     
     def __init__(
         self,
@@ -73,4 +76,5 @@ class Controller(base.Controller):
         super().generate_commands()
         command = self.get_request()
         action, params = self.parse_command(command)
-        self.queue_command(action, params)
+        if any(fnmatch.fnmatch(action, c) for c in self._permitted_commands):
+            self.queue_command(action, params)

@@ -56,3 +56,4 @@ class Controller(remote.Controller):
         # Handle remote commands first
         #
         super().generate_commands()
+    
