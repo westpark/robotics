@@ -139,7 +139,7 @@ class Snes_Keypad(Keypad):
 		super().__init__(keys, axes, background_image, xy_position)
 
 # --- Event Result functions
-def joybuttondown_results(keypad):
+def joybuttondown_results(keypad, speed):
 	if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED + TOLERANCE:
 		speed -= SPEED_STEP
 	elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < TOP_SPEED + TOLERANCE:
@@ -154,8 +154,9 @@ def joybuttondown_results(keypad):
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.TURN_RIGHT_BUTTON):
 		sender.send(TURN_RIGHT_COMMAND)
+	return speed
 
-def joyaxismotion_results(keypad):
+def joyaxismotion_results(keypad, speed):
 	axis_total = 0
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
@@ -169,7 +170,8 @@ def joyaxismotion_results(keypad):
 	if axis_total < TOLERANCE:
 		sender.send(STOP_COMMAND)
 
-def speedo(speed, font):
+def speedo(speed):
+	font = pygame.font.Font(None, 36)
 	image = pygame.Surface((100, 100))
 	image.fill(BLACK)
 	text = font.render("Speed", True, WHITE)
@@ -178,7 +180,8 @@ def speedo(speed, font):
 	image.blit(show_speed, [25, 50])
 	return image
 
-def display_command(command, font):
+def display_command(command):
+	font = pygame.font.Font(None, 36)
 	image = pygame.Surface((500, 40))
 	image.fill(BLACK)
 	text = font.render("COMMAND:", True, WHITE)
@@ -187,43 +190,47 @@ def display_command(command, font):
 	image.blit(show, [160, 5])
 	return image
 	
-pygame.init()
-size = (500, 500)
-screen = pygame.display.set_mode(size)
-font = pygame.font.Font(None, 36)
-pygame.display.set_caption("Robot Controller")
-clock = pygame.time.Clock()
-sender = comms.Sender()
-keypad = Snes_Keypad([0,0])
-buttons = keypad.device.get_numbuttons()
-axes = keypad.device.get_numaxes()
+def main():
 
-speed = TOP_SPEED
-done = False
-while not done:
-	# --- Main event loop
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			done = True
-		if event.type == pygame.JOYBUTTONDOWN:
-			joybuttondown_results(keypad)
-		if event.type == pygame.JOYAXISMOTION:
-			joyaxismotion_results(keypad)
-	# --- Update Display
-	screen.fill(WHITE)
-	screen.blit(keypad.background_image, keypad.xy_position)
-	for i in range(buttons):
-		button = keypad.device.get_button(i)
-		if button:
-			screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
-	for i in range(axes):
-		axis = keypad.device.get_axis(i)
-		if axis > TOLERANCE:
-			screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
-		elif axis < -TOLERANCE:
-			screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
-	screen.blit(speedo(speed, font), [10,10])
-	screen.blit(display_command(str(speed), font), [0,460])
-	pygame.display.flip()
-	clock.tick(60)
-pygame.quit()
+	pygame.init()
+	size = (500, 500)
+	screen = pygame.display.set_mode(size)
+	pygame.display.set_caption("Robot Controller")
+	clock = pygame.time.Clock()
+	sender = comms.Sender()
+	keypad = Snes_Keypad([0,0])
+	buttons = keypad.device.get_numbuttons()
+	axes = keypad.device.get_numaxes()
+
+	speed = TOP_SPEED
+	done = False
+	while not done:
+		# --- Main event loop
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				done = True
+			if event.type == pygame.JOYBUTTONDOWN:
+				speed = joybuttondown_results(keypad, speed)
+			if event.type == pygame.JOYAXISMOTION:
+				joyaxismotion_results(keypad, speed)
+		# --- Update Display
+		screen.fill(WHITE)
+		screen.blit(keypad.background_image, keypad.xy_position)
+		for i in range(buttons):
+			button = keypad.device.get_button(i)
+			if button:
+				screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
+		for i in range(axes):
+			axis = keypad.device.get_axis(i)
+			if axis > TOLERANCE:
+				screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
+			elif axis < -TOLERANCE:
+				screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
+		screen.blit(speedo(speed), [10,10])
+		screen.blit(display_command(str(speed)), [0,460])
+		pygame.display.flip()
+		clock.tick(60)
+	pygame.quit()
+	
+if __name__ == "__main__":
+    main()
