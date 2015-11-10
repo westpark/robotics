@@ -22,6 +22,7 @@ class Robot(base.BaseRobot):
     def stop(self, *args):
         print("stop", args)
 
-    def turn(direction, extent):
+    def turn(self, direction, extent=1.0, speed=1.0):
         extent = float(extent)
-        print("turn", direction, extent)
+        speed = float(speed)
+        print("turn", direction, extent, speed)
