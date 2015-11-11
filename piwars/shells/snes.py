@@ -41,12 +41,11 @@ class Arrow_Key(Key):
 		super().__init__(image, xy_position)
 		
 class Round_Key(Key):
-	def __init__(self, color, xy_position, xy_select_position, radius=20):
+	def __init__(self, color, xy_position, radius=20):
 		diameter = 2 * radius
 		image = pygame.Surface((diameter, diameter))
 		image.set_colorkey(BLACK)
 		pygame.draw.circle(image, color, [radius, radius], radius)
-		self.xy_select_position = xy_select_position
 		super().__init__(image, xy_position)
 
 class LR_Key(Key):
@@ -63,16 +62,26 @@ class Thin_Key(Key):
 		pygame.draw.line(image, RED, [0, length], [length, 0], 30)
 		super().__init__(image, xy_position)
 
+class Select_Screen_Item(object):
+	def __init__(self, button, xy_position, label, command, offset = 50):
+		self.button = button
+		self.label = label
+		self.command = command
+		self.button_xy = xy_position
+		self.label_xy = [xy_position[0] + offset, xy_position[1]]
+
 # --- Keypad Classes		
 class Keypad():
-	def __init__(self, keys, axes, background_image, xy_position):
+	def __init__(self, keys, axes, background_image, xy_position, select_screen_items):
 		self.keys = keys
 		self.axes = axes
 		self.background_image = background_image
 		self.xy_position = xy_position
+		self.select_screen_items = select_screen_items
 		while True:
 			try:
 				self.device = pygame.joystick.Joystick(0)
+				break
 			except pygame.error:
 				input("Please plug in a joystick")
 			
@@ -88,10 +97,6 @@ class Snes_Keypad(Keypad):
 	SPEED_UP_BUTTON = 5
 	STOP_BUTTON = 9
 
-	SELECT_3_POINT_TURN_BUTTON = 0
-	SELECT_GULLEY_RACE_BUTTON = 1
-	SELECT_MANUAL_DRIVE_BUTTON = 2
-	
 	def __init__(self, xy_position):
 		arrows_center_x = 85 + xy_position[0]
 		arrows_center_y = 275 + xy_position[1]
@@ -138,10 +143,10 @@ class Snes_Keypad(Keypad):
 		]
 		
 		keys = [ 
-		Round_Key(BLUE, [x_key_x, x_key_y], [select_options_x, select_3_point_turn_y]),
-		Round_Key(RED, [a_key_x, a_key_y], [select_options_x, select_gulley_race_y]),
-		Round_Key(YELLOW, [b_key_x, b_key_y], [select_options_x, select_manual_drive_y = 300]),
-		Round_Key(GREEN, [y_key_x, y_key_y], [0, 0]), 
+		Round_Key(BLUE, [x_key_x, x_key_y],),
+		Round_Key(RED, [a_key_x, a_key_y],),
+		Round_Key(YELLOW, [b_key_x, b_key_y],),
+		Round_Key(GREEN, [y_key_x, y_key_y],), 
 		LR_Key([l_key_x, l_key_y]),
 		LR_Key([r_key_x, r_key_y]),
 		"BLANK", #This key doesn't exist on the snes keypad
@@ -150,9 +155,14 @@ class Snes_Keypad(Keypad):
 		Thin_Key([start_key_x, start_key_y]),
 		]
 		
+		select_x = 200
+		select_screen_items = (Select_Screen_Item(keys[0], [select_x, 100], "3 Point Turn", "THREE POINT TURN COMMAND"),
+						Select_Screen_Item(keys[1], [select_x, 200], "Gulley Race", "GULLEY RACE COMMAND"),
+						Select_Screen_Item(keys[2], [select_x, 300], "Manual Control", "MANUAL CONTROL COMMAND"),
+						)
 		background_image = pygame.image.load(self.BACKGROUND_IMAGE).convert()
 		background_image.set_colorkey(WHITE)
-		super().__init__(keys, axes, background_image, xy_position)
+		super().__init__(keys, axes, background_image, xy_position, select_screen_items)
 
 class Speedo(object):
 	def __init__(self):
@@ -179,20 +189,15 @@ class Mode_Display(object):
 		self.image.blit(self.fixed_text, (0, 0))
 		self.image.blit(show_mode, (100, 0))
 		
-def select_screen(self):
-	select_screen = pygame.Surface((500, 500))
-	OFFSET = 50
+def make_select_screen(keypad):
+	image = pygame.Surface((500, 500))
+	image.fill(WHITE)
 	font = pygame.font.Font(None, 36)
-	select_screen.blit(keypad.keys(SELECT_3_POINT_TURN_BUTTON).image, keypad.keys(SELECT_3_POINT_TURN_BUTTON).xy_select_position)
-	prompt = font.render("Three Point Turn", True, WHITE)
-	select_screen.blit(prompt, keypad.keys(SELECT_3_POINT_TURN_BUTTON).[xy_select_position[0] + OFFSET, xy_select_position[1])
-	select_screen.blit(keypad.keys(SELECT_GULLEY_RACE_BUTTON).image, keypad.keys(SELECT_GULLEY_RACE_BUTTON).xy_select_position)
-	prompt = font.render("Gulley Race", True, WHITE)
-	select_screen.blit(prompt, keypad.keys(SELECT_GULLEY_RACE_BUTTON).[xy_select_position[0] + OFFSET, xy_select_position[1])
-	select_screen.blit(keypad.keys(SELECT_MANUAL_DRIVE_BUTTON).image, keypad.keys(SELECT_MANUAL_DRIVE_BUTTON).xy_select_position)
-	prompt = font.render("Manual Drive", True, WHITE)
-	select_screen.blit(prompt, keypad.keys(SELECT_MANUAL_DRIVE_BUTTON).[xy_select_position[0] + OFFSET, xy_select_position[1])
-	return select_screen
+	for item in keypad.select_screen_items:
+		image.blit(item.button.image, item.button_xy)
+		label = font.render(item.label, True, BLACK)
+		image.blit(label, item.label_xy)		
+	return image
 	
 # --- Event Result functions
 def select_joybuttondown_results(keypad):
@@ -255,7 +260,7 @@ def main():
 	speed = TOP_SPEED
 	speedo = Speedo()
 	select_pressed = True
-	select_screen = select_screen()
+	select_display = make_select_screen(keypad)
 	
 	done = False
 	while not done:
@@ -276,8 +281,8 @@ def main():
 		
 		# --- Update Display
 		screen.fill(WHITE)
-		if select == True:
-			screen.blit(select_screen, [0, 0])
+		if select_pressed == True:
+			screen.blit(select_display, [0, 0])
 		else:
 			screen.blit(keypad.background_image, keypad.xy_position)
 			for i in range(buttons):
