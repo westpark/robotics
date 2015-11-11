@@ -41,11 +41,12 @@ class Arrow_Key(Key):
 		super().__init__(image, xy_position)
 		
 class Round_Key(Key):
-	def __init__(self, color, xy_position, radius=20):
-		diameter = 2*radius
+	def __init__(self, color, xy_position, xy_select_position, radius=20):
+		diameter = 2 * radius
 		image = pygame.Surface((diameter, diameter))
 		image.set_colorkey(BLACK)
 		pygame.draw.circle(image, color, [radius, radius], radius)
+		self.xy_select_position = xy_select_position
 		super().__init__(image, xy_position)
 
 class LR_Key(Key):
@@ -69,7 +70,12 @@ class Keypad():
 		self.axes = axes
 		self.background_image = background_image
 		self.xy_position = xy_position
-		self.device = pygame.joystick.Joystick(0)
+		while True:
+			try:
+				self.device = pygame.joystick.Joystick(0)
+			except pygame.error:
+				input("Please plug in a joystick")
+			
 		self.device.init()
 		
 class Snes_Keypad(Keypad):
@@ -82,6 +88,10 @@ class Snes_Keypad(Keypad):
 	SPEED_UP_BUTTON = 5
 	STOP_BUTTON = 9
 
+	SELECT_3_POINT_TURN_BUTTON = 0
+	SELECT_GULLEY_RACE_BUTTON = 1
+	SELECT_MANUAL_DRIVE_BUTTON = 2
+	
 	def __init__(self, xy_position):
 		arrows_center_x = 85 + xy_position[0]
 		arrows_center_y = 275 + xy_position[1]
@@ -111,6 +121,11 @@ class Snes_Keypad(Keypad):
 		select_key_y = 294
 		start_key_x = 242
 		start_key_y = 294
+		
+		select_options_x = 200
+		select_3_point_turn_y = 200
+		select_gulley_race_y = 300
+		select_manual_drive_y = 400
 		axes = [
 		[
 		Arrow_Key([left_arrow_x, left_arrow_y], 180, TURN_LEFT_COMMAND),
@@ -123,10 +138,10 @@ class Snes_Keypad(Keypad):
 		]
 		
 		keys = [ 
-		Round_Key(BLUE, [x_key_x, x_key_y]),
-		Round_Key(RED, [a_key_x, a_key_y]),
-		Round_Key(YELLOW, [b_key_x, b_key_y]),
-		Round_Key(GREEN, [y_key_x, y_key_y]), 
+		Round_Key(BLUE, [x_key_x, x_key_y], [select_options_x, select_3_point_turn_y]),
+		Round_Key(RED, [a_key_x, a_key_y], [select_options_x, select_gulley_race_y]),
+		Round_Key(YELLOW, [b_key_x, b_key_y], [select_options_x, select_manual_drive_y = 300]),
+		Round_Key(GREEN, [y_key_x, y_key_y], [0, 0]), 
 		LR_Key([l_key_x, l_key_y]),
 		LR_Key([r_key_x, r_key_y]),
 		"BLANK", #This key doesn't exist on the snes keypad
@@ -141,28 +156,64 @@ class Snes_Keypad(Keypad):
 
 class Speedo(object):
 	def __init__(self):
+		self.image = pygame.Surface((100, 100))
 		self.font = pygame.font.Font(None, 36)
 		self.fixed_text = self.font.render("Speed", True, WHITE)
-		self.image = pygame.Surface((100, 100))
 		
 	def update(self, speed):
 		self.image.fill(BLACK)
-		show_speed = self.font.render(str(speed), True, RED)
 		self.image.blit(self.fixed_text,[10, 5])
+		show_speed = self.font.render(str(speed), True, RED)
 		self.image.blit(show_speed, [25, 50])
-		return self.image
+
+
+class Mode_Display(object):
+	def __init__(self):
+		self.image = pygame.Surface((500, 40))
+		self.font = pygame.font.Font(None, 36)
+		self.fixed_text = self.font.render("Mode:", True, WHITE)
 		
+	def update(self, mode):
+		self.image.fill(BLACK)
+		show_mode = self.font.render(mode, True, RED)
+		self.image.blit(self.fixed_text, (0, 0))
+		self.image.blit(show_mode, (100, 0))
+		
+def select_screen(self):
+	select_screen = pygame.Surface((500, 500))
+	OFFSET = 50
+	font = pygame.font.Font(None, 36)
+	select_screen.blit(keypad.keys(SELECT_3_POINT_TURN_BUTTON).image, keypad.keys(SELECT_3_POINT_TURN_BUTTON).xy_select_position)
+	prompt = font.render("Three Point Turn", True, WHITE)
+	select_screen.blit(prompt, keypad.keys(SELECT_3_POINT_TURN_BUTTON).[xy_select_position[0] + OFFSET, xy_select_position[1])
+	select_screen.blit(keypad.keys(SELECT_GULLEY_RACE_BUTTON).image, keypad.keys(SELECT_GULLEY_RACE_BUTTON).xy_select_position)
+	prompt = font.render("Gulley Race", True, WHITE)
+	select_screen.blit(prompt, keypad.keys(SELECT_GULLEY_RACE_BUTTON).[xy_select_position[0] + OFFSET, xy_select_position[1])
+	select_screen.blit(keypad.keys(SELECT_MANUAL_DRIVE_BUTTON).image, keypad.keys(SELECT_MANUAL_DRIVE_BUTTON).xy_select_position)
+	prompt = font.render("Manual Drive", True, WHITE)
+	select_screen.blit(prompt, keypad.keys(SELECT_MANUAL_DRIVE_BUTTON).[xy_select_position[0] + OFFSET, xy_select_position[1])
+	return select_screen
+	
 # --- Event Result functions
+def select_joybuttondown_results(keypad):
+	if keypad.device.get_button(keypad.SELECT_3_POINT_TURN_BUTTON):
+		mode = "Three Point Turn"
+	elif keypad.device.get_button(keypad.SELECT_GULLEY_RACE_BUTTON):
+		mode = "Gulley Race"
+	elif keypad.device.get_button(keypad.SELECT_MANUAL_DRIVE_BUTTON):
+		mode = "Manual Drive"
+	return mode
+	
 def joybuttondown_results(keypad, speed, sender):
 	if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED + TOLERANCE:
 		speed -= SPEED_STEP
 	elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < TOP_SPEED + TOLERANCE:
 		speed += SPEED_STEP
-	if keypad.device.get_button(keypad.TOP_SPEED_BUTTON):
+	elif keypad.device.get_button(keypad.TOP_SPEED_BUTTON):
 		speed = TOP_SPEED
 	elif keypad.device.get_button(keypad.MIN_SPEED_BUTTON):
 		speed = MIN_SPEED
-	if keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
+	elif keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
 		sender.send(TURN_LEFT_COMMAND)
 		time.sleep(NINETY_DEGREE_TURN_TIME)
 		sender.send(STOP_COMMAND)
@@ -172,10 +223,11 @@ def joybuttondown_results(keypad, speed, sender):
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.STOP_BUTTON):
 		sender.send(STOP_COMMAND)
-	return speed
+	elif keypad.device.get_button(keypad.SELECT_BUTTON):
+		return True, speed
+	return False, speed
 
 def joyaxismotion_results(keypad, axes, speed, sender):
-	print("hello")
 	axis_total = 0
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
@@ -188,48 +240,60 @@ def joyaxismotion_results(keypad, axes, speed, sender):
 			sender.send(command)
 	if axis_total < axes * TOLERANCE:
 		sender.send(STOP_COMMAND)
-	print("AxisTotal:", axis_total)
 
 	
 def main():
-
 	pygame.init()
 	size = (500, 500)
 	screen = pygame.display.set_mode(size)
-	pygame.display.set_caption("Robot Controller")
+	keypad = Snes_Keypad([0,0])
 	clock = pygame.time.Clock()
 	sender = comms.Sender()
-	keypad = Snes_Keypad([0,0])
+	pygame.display.set_caption("Robot Controller")
 	buttons = keypad.device.get_numbuttons()
 	axes = keypad.device.get_numaxes()
-	
-	
 	speed = TOP_SPEED
 	speedo = Speedo()
+	select_pressed = True
+	select_screen = select_screen()
+	
 	done = False
 	while not done:
+	
 		# --- Main event loop
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				done = True
 			if event.type == pygame.JOYBUTTONDOWN:
-				speed = joybuttondown_results(keypad, speed, sender)
+				if select_pressed == True:
+					mode = select_joybuttondown_results(keypad)
+					sender.send(mode)
+					select = False
+				else:
+					select, speed = joybuttondown_results(keypad, speed, sender)
 			if event.type == pygame.JOYAXISMOTION:
 				joyaxismotion_results(keypad, axes, speed, sender)
+		
 		# --- Update Display
 		screen.fill(WHITE)
-		screen.blit(keypad.background_image, keypad.xy_position)
-		for i in range(buttons):
-			button = keypad.device.get_button(i)
-			if button:
-				screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
-		for i in range(axes):
-			axis = keypad.device.get_axis(i)
-			if axis > TOLERANCE:
-				screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
-			elif axis < -TOLERANCE:
-				screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
-		screen.blit(speedo.update(speed), [10,10])
+		if select == True:
+			screen.blit(select_screen, [0, 0])
+		else:
+			screen.blit(keypad.background_image, keypad.xy_position)
+			for i in range(buttons):
+				button = keypad.device.get_button(i)
+				if button:
+					screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
+			for i in range(axes):
+				axis = keypad.device.get_axis(i)
+				if axis > TOLERANCE:
+					screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
+				elif axis < -TOLERANCE:
+					screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
+			speedo.update(speed)
+			screen.blit(speedo.image, [10,10])
+			mode_display.update(mode)
+			screen.blit(mode.image, [0,460])
 		pygame.display.flip()
 		clock.tick(60)
 	pygame.quit()
@@ -240,4 +304,3 @@ class Shell(object):
 
 if __name__ == "__main__":
     main()
-	
