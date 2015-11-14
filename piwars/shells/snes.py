@@ -8,7 +8,8 @@ SPEED_STEP = 0.1
 TOP_SPEED = 1.0
 MIN_SPEED = 0.30
 TURN_FRACTION = 0.25
-NINETY_DEGREE_TURN_TIME = 0.5
+NINETY_DEGREE_TURN_TIME_LEFT = 0.605608333
+NINETY_DEGREE_TURN_TIME_RIGHT = 0.628608333
 TURN_LEFT_COMMAND = "turn left {}".format(TURN_FRACTION)
 TURN_RIGHT_COMMAND = "turn right {}".format(TURN_FRACTION)
 FORWARD_COMMAND = "forward"
@@ -70,7 +71,7 @@ class Select_Screen_Item(object):
 		self.button_xy = xy_position
 		self.label_xy = [xy_position[0] + offset, xy_position[1]]
 
-# --- Keypad Classes		
+# --- Keypad Classes
 class Keypad():
 	def __init__(self, keys, axes, background_image, xy_position, select_screen_items):
 		self.keys = keys
@@ -78,13 +79,8 @@ class Keypad():
 		self.background_image = background_image
 		self.xy_position = xy_position
 		self.select_screen_items = select_screen_items
-		while True:
-			try:
-				self.device = pygame.joystick.Joystick(0)
-				break
-			except pygame.error:
-				input("Please plug in a joystick")
-			
+		self.device = pygame.joystick.Joystick(0)
+		
 		self.device.init()
 		
 class Snes_Keypad(Keypad):
@@ -176,7 +172,6 @@ class Speedo(object):
 		show_speed = self.font.render(str(speed), True, RED)
 		self.image.blit(show_speed, [25, 50])
 
-
 class Mode_Display(object):
 	def __init__(self):
 		self.image = pygame.Surface((500, 40))
@@ -220,17 +215,17 @@ def joybuttondown_results(keypad, speed, sender):
 		speed = MIN_SPEED
 	elif keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
 		sender.send(TURN_LEFT_COMMAND)
-		time.sleep(NINETY_DEGREE_TURN_TIME)
+		time.sleep(NINETY_DEGREE_TURN_TIME_LEFT)
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.TURN_RIGHT_BUTTON):
 		sender.send(TURN_RIGHT_COMMAND)
-		time.sleep(NINETY_DEGREE_TURN_TIME)
+		time.sleep(NINETY_DEGREE_TURN_TIME_RIGHT)
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.STOP_BUTTON):
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.SELECT_BUTTON):
-		return True, speed
-	return False, speed
+		
+	return speed
 
 def joyaxismotion_results(keypad, axes, speed, sender):
 	axis_total = 0
@@ -248,6 +243,7 @@ def joyaxismotion_results(keypad, axes, speed, sender):
 
 	
 def main():
+	print("1")
 	pygame.init()
 	size = (500, 500)
 	screen = pygame.display.set_mode(size)
@@ -259,14 +255,17 @@ def main():
 	axes = keypad.device.get_numaxes()
 	speed = TOP_SPEED
 	speedo = Speedo()
-	select_pressed = True
+	mode_display = Mode_Display()
+	mode = " --- "
+	select_pressed = False
 	select_display = make_select_screen(keypad)
-	
+	print("2")
 	done = False
 	while not done:
-	
+		print("while")
 		# --- Main event loop
 		for event in pygame.event.get():
+			print("event")
 			if event.type == pygame.QUIT:
 				done = True
 			if event.type == pygame.JOYBUTTONDOWN:
@@ -275,7 +274,7 @@ def main():
 					sender.send(mode)
 					select = False
 				else:
-					select, speed = joybuttondown_results(keypad, speed, sender)
+					speed = joybuttondown_results(keypad, speed, sender)
 			if event.type == pygame.JOYAXISMOTION:
 				joyaxismotion_results(keypad, axes, speed, sender)
 		
@@ -285,20 +284,20 @@ def main():
 			screen.blit(select_display, [0, 0])
 		else:
 			screen.blit(keypad.background_image, keypad.xy_position)
-			for i in range(buttons):
-				button = keypad.device.get_button(i)
-				if button:
-					screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
-			for i in range(axes):
-				axis = keypad.device.get_axis(i)
-				if axis > TOLERANCE:
-					screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
-				elif axis < -TOLERANCE:
-					screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
+		for i in range(buttons):
+			button = keypad.device.get_button(i)
+			if button:
+				screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
+		for i in range(axes):
+			axis = keypad.device.get_axis(i)
+			if axis > TOLERANCE:
+				screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
+			elif axis < -TOLERANCE:
+				screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
 			speedo.update(speed)
 			screen.blit(speedo.image, [10,10])
 			mode_display.update(mode)
-			screen.blit(mode.image, [0,460])
+			screen.blit(mode_display.image, [0,460])
 		pygame.display.flip()
 		clock.tick(60)
 	pygame.quit()
