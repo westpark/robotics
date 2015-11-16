@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os, sys
 import collections
+import itertools
 import queue
+import statistics
 import threading
 
 from ..core import config, exc, logging
@@ -11,6 +13,8 @@ from ..sensors import ultrasonic
 
 class Controller(remote.Controller):
 
+    N_SAMPLES = 10
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.started = False
@@ -35,7 +39,7 @@ class Controller(remote.Controller):
             sensor_config = config[sensor_name]
             sensor = ultrasonic.Sensor(sensor_config.trigger_pin, sensor_config.echo_pin)
             queue = self.sensor_queues[position] = queue.Queue()
-            self.distances[position] = deque.deque([], 10)
+            self.distances[position] = deque.deque([], self.N_SAMPLES)
             sensor_thread = threading.Thread(target=self.distance_sensor, args=(sensor, queue))
             self.sensor_threads.append(sensor_thread)
             
@@ -57,6 +61,23 @@ class Controller(remote.Controller):
                 continue
             else:
                 self.distances[position].append(distance)
+
+    def differences_without_outliers(self, distances):
+        #
+        # Discard major outliers
+        #
+        q2 = statistics.median(distances)
+        q1 = statistics.median(n for n in numbers_in_order if n < q2)
+        q3 = statistics.median(n for n in numbers_in_order if n > q2)
+        interquartile = q3 - q1
+        inner_offset = interquartile * 1.5 # inner fence; use 3.0 for outer fence
+        lower_fence, higher_fence = q1 - inner_offset, q3 + inner_offset
+        robust_distances = [d for d in distances if lower_fence <= d <= higher_fence]
+        #
+        # Determine the overall movement over the last N_SAMPLES. If this is negative, we're
+        # moving closer to that side; if positive, we're moving away.
+        #
+        return sum(b - a for (a, b) in zip(robust_distances[:-1], robust_distances[1:]))
     
     def generate_commands(self):
         #
@@ -64,6 +85,14 @@ class Controller(remote.Controller):
         #
         super().generate_commands()
         #
-        # Attempt to detect a lateral movement and compensate
+        # Pick up the latest movements recorded from the lateral sensors
         #
         self.read_distances()
+        #
+        # Determine whether we need to move
+        #
+        effective_movement = self.effective_movement()
+        if effective_movement == "left":
+            self.robot.turn("right")
+        elif effective_movement == "right":
+            self.robot.turn("left")
