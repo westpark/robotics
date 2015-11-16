@@ -6,7 +6,7 @@ import queue
 import statistics
 import threading
 
-from ..core import config, exc, logging
+from ..core import config, exc, logging, utils
 log = logging.logger(__package__)
 from . import remote
 from ..sensors import ultrasonic
@@ -63,18 +63,7 @@ class Controller(remote.Controller):
                 self.distances[position].append(distance)
 
     def movement(self, distances):
-        #
-        # Discard major outliers
-        # (Explanation from: http://www.wikihow.com/Calculate-Outliers)
-        #
-        #
-        q2 = statistics.median(distances)
-        q1 = statistics.median(n for n in numbers_in_order if n < q2)
-        q3 = statistics.median(n for n in numbers_in_order if n > q2)
-        interquartile = q3 - q1
-        inner_offset = interquartile * 1.5 # inner fence; use 3.0 for outer fence
-        lower_fence, higher_fence = q1 - inner_offset, q3 + inner_offset
-        robust_distances = [d for d in distances if lower_fence <= d <= higher_fence]
+        robust_distances = utils.without_outliers(distances)
         #
         # Determine the overall movement over the last N_SAMPLES. If this is negative, we're
         # moving closer to that side; if positive, we're moving away.
@@ -82,8 +71,8 @@ class Controller(remote.Controller):
         return sum(b - a for (a, b) in zip(robust_distances[:-1], robust_distances[1:]))
     
     def effective_movement(self):
-        left_movement = self.differences_without_outliers(self.distances["left"])
-        right_movement = self.differences_without_outliers(self.distances["right"])
+        left_movement = self.movement(self.distances["left"])
+        right_movement = self.movement(self.distances["right"])
         if left_movement > right_movement:
             return "left":
         else:
