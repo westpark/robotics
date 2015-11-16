@@ -54,7 +54,7 @@ class Controller(remote.Controller):
         self.started = False
 
     def read_distances(self):
-        for position in "left", "right":
+        for position in self.sensor_queues:
             try:
                 distance = self.sensor_queues[position].get_nowait()
             except queue.Empty:
@@ -62,7 +62,7 @@ class Controller(remote.Controller):
             else:
                 self.distances[position].append(distance)
 
-    def differences_without_outliers(self, distances):
+    def movement(self, distances):
         #
         # Discard major outliers
         #
@@ -78,6 +78,14 @@ class Controller(remote.Controller):
         # moving closer to that side; if positive, we're moving away.
         #
         return sum(b - a for (a, b) in zip(robust_distances[:-1], robust_distances[1:]))
+    
+    def effective_movement(self):
+        left_movement = self.differences_without_outliers(self.distances["left"])
+        right_movement = self.differences_without_outliers(self.distances["right"])
+        if left_movement > right_movement:
+            return "left":
+        else:
+            return "right"
     
     def generate_commands(self):
         #
