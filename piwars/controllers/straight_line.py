@@ -65,6 +65,8 @@ class Controller(remote.Controller):
     def movement(self, distances):
         #
         # Discard major outliers
+        # (Explanation from: http://www.wikihow.com/Calculate-Outliers)
+        #
         #
         q2 = statistics.median(distances)
         q1 = statistics.median(n for n in numbers_in_order if n < q2)
