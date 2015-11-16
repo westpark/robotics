@@ -8,7 +8,8 @@ SPEED_STEP = 0.1
 TOP_SPEED = 1.0
 MIN_SPEED = 0.30
 TURN_FRACTION = 0.25
-NINETY_DEGREE_TURN_TIME = 0.5
+NINETY_DEGREE_TURN_TIME_LEFT = 0.605608333
+NINETY_DEGREE_TURN_TIME_RIGHT = 0.628608333
 TURN_LEFT_COMMAND = "turn left {}".format(TURN_FRACTION)
 TURN_RIGHT_COMMAND = "turn right {}".format(TURN_FRACTION)
 FORWARD_COMMAND = "forward"
@@ -42,7 +43,7 @@ class Arrow_Key(Key):
 		
 class Round_Key(Key):
 	def __init__(self, color, xy_position, radius=20):
-		diameter = 2*radius
+		diameter = 2 * radius
 		image = pygame.Surface((diameter, diameter))
 		image.set_colorkey(BLACK)
 		pygame.draw.circle(image, color, [radius, radius], radius)
@@ -62,14 +63,24 @@ class Thin_Key(Key):
 		pygame.draw.line(image, RED, [0, length], [length, 0], 30)
 		super().__init__(image, xy_position)
 
-# --- Keypad Classes		
+class Select_Screen_Item(object):
+	def __init__(self, button, xy_position, label, command, offset = 50):
+		self.button = button
+		self.label = label
+		self.command = command
+		self.button_xy = xy_position
+		self.label_xy = [xy_position[0] + offset, xy_position[1]]
+
+# --- Keypad Classes
 class Keypad():
-	def __init__(self, keys, axes, background_image, xy_position):
+	def __init__(self, keys, axes, background_image, xy_position, select_screen_items):
 		self.keys = keys
 		self.axes = axes
 		self.background_image = background_image
 		self.xy_position = xy_position
+		self.select_screen_items = select_screen_items
 		self.device = pygame.joystick.Joystick(0)
+		
 		self.device.init()
 		
 class Snes_Keypad(Keypad):
@@ -111,6 +122,11 @@ class Snes_Keypad(Keypad):
 		select_key_y = 294
 		start_key_x = 242
 		start_key_y = 294
+		
+		select_options_x = 200
+		select_3_point_turn_y = 200
+		select_gulley_race_y = 300
+		select_manual_drive_y = 400
 		axes = [
 		[
 		Arrow_Key([left_arrow_x, left_arrow_y], 180, TURN_LEFT_COMMAND),
@@ -123,10 +139,10 @@ class Snes_Keypad(Keypad):
 		]
 		
 		keys = [ 
-		Round_Key(BLUE, [x_key_x, x_key_y]),
-		Round_Key(RED, [a_key_x, a_key_y]),
-		Round_Key(YELLOW, [b_key_x, b_key_y]),
-		Round_Key(GREEN, [y_key_x, y_key_y]), 
+		Round_Key(BLUE, [x_key_x, x_key_y],),
+		Round_Key(RED, [a_key_x, a_key_y],),
+		Round_Key(YELLOW, [b_key_x, b_key_y],),
+		Round_Key(GREEN, [y_key_x, y_key_y],), 
 		LR_Key([l_key_x, l_key_y]),
 		LR_Key([r_key_x, r_key_y]),
 		"BLANK", #This key doesn't exist on the snes keypad
@@ -135,47 +151,83 @@ class Snes_Keypad(Keypad):
 		Thin_Key([start_key_x, start_key_y]),
 		]
 		
+		select_x = 200
+		select_screen_items = (Select_Screen_Item(keys[0], [select_x, 100], "3 Point Turn", "THREE POINT TURN COMMAND"),
+						Select_Screen_Item(keys[1], [select_x, 200], "Gulley Race", "GULLEY RACE COMMAND"),
+						Select_Screen_Item(keys[2], [select_x, 300], "Manual Control", "MANUAL CONTROL COMMAND"),
+						)
 		background_image = pygame.image.load(self.BACKGROUND_IMAGE).convert()
 		background_image.set_colorkey(WHITE)
-		super().__init__(keys, axes, background_image, xy_position)
+		super().__init__(keys, axes, background_image, xy_position, select_screen_items)
 
 class Speedo(object):
 	def __init__(self):
+		self.image = pygame.Surface((100, 100))
 		self.font = pygame.font.Font(None, 36)
 		self.fixed_text = self.font.render("Speed", True, WHITE)
-		self.image = pygame.Surface((100, 100))
 		
 	def update(self, speed):
 		self.image.fill(BLACK)
-		show_speed = self.font.render(str(speed), True, RED)
 		self.image.blit(self.fixed_text,[10, 5])
+		show_speed = self.font.render(str(speed), True, RED)
 		self.image.blit(show_speed, [25, 50])
-		return self.image
+
+class Mode_Display(object):
+	def __init__(self):
+		self.image = pygame.Surface((500, 40))
+		self.font = pygame.font.Font(None, 36)
+		self.fixed_text = self.font.render("Mode:", True, WHITE)
 		
+	def update(self, mode):
+		self.image.fill(BLACK)
+		show_mode = self.font.render(mode, True, RED)
+		self.image.blit(self.fixed_text, (0, 0))
+		self.image.blit(show_mode, (100, 0))
+		
+def make_select_screen(keypad):
+	image = pygame.Surface((500, 500))
+	image.fill(WHITE)
+	font = pygame.font.Font(None, 36)
+	for item in keypad.select_screen_items:
+		image.blit(item.button.image, item.button_xy)
+		label = font.render(item.label, True, BLACK)
+		image.blit(label, item.label_xy)		
+	return image
+	
 # --- Event Result functions
+def select_joybuttondown_results(keypad):
+	if keypad.device.get_button(keypad.SELECT_3_POINT_TURN_BUTTON):
+		mode = "Three Point Turn"
+	elif keypad.device.get_button(keypad.SELECT_GULLEY_RACE_BUTTON):
+		mode = "Gulley Race"
+	elif keypad.device.get_button(keypad.SELECT_MANUAL_DRIVE_BUTTON):
+		mode = "Manual Drive"
+	return mode
+	
 def joybuttondown_results(keypad, speed, sender):
 	if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED + TOLERANCE:
 		speed -= SPEED_STEP
 	elif keypad.device.get_button(keypad.SPEED_UP_BUTTON) and speed + SPEED_STEP < TOP_SPEED + TOLERANCE:
 		speed += SPEED_STEP
-	if keypad.device.get_button(keypad.TOP_SPEED_BUTTON):
+	elif keypad.device.get_button(keypad.TOP_SPEED_BUTTON):
 		speed = TOP_SPEED
 	elif keypad.device.get_button(keypad.MIN_SPEED_BUTTON):
 		speed = MIN_SPEED
-	if keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
+	elif keypad.device.get_button(keypad.TURN_LEFT_BUTTON):
 		sender.send(TURN_LEFT_COMMAND)
-		time.sleep(NINETY_DEGREE_TURN_TIME)
+		time.sleep(NINETY_DEGREE_TURN_TIME_LEFT)
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.TURN_RIGHT_BUTTON):
 		sender.send(TURN_RIGHT_COMMAND)
-		time.sleep(NINETY_DEGREE_TURN_TIME)
+		time.sleep(NINETY_DEGREE_TURN_TIME_RIGHT)
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.STOP_BUTTON):
 		sender.send(STOP_COMMAND)
+	elif keypad.device.get_button(keypad.SELECT_BUTTON):
+		
 	return speed
 
 def joyaxismotion_results(keypad, axes, speed, sender):
-	print("hello")
 	axis_total = 0
 	for i in range(axes):
 		axis = keypad.device.get_axis(i)
@@ -188,37 +240,50 @@ def joyaxismotion_results(keypad, axes, speed, sender):
 			sender.send(command)
 	if axis_total < axes * TOLERANCE:
 		sender.send(STOP_COMMAND)
-	print("AxisTotal:", axis_total)
 
 	
 def main():
-
+	print("1")
 	pygame.init()
 	size = (500, 500)
 	screen = pygame.display.set_mode(size)
-	pygame.display.set_caption("Robot Controller")
+	keypad = Snes_Keypad([0,0])
 	clock = pygame.time.Clock()
 	sender = comms.Sender()
-	keypad = Snes_Keypad([0,0])
+	pygame.display.set_caption("Robot Controller")
 	buttons = keypad.device.get_numbuttons()
 	axes = keypad.device.get_numaxes()
-	
-	
 	speed = TOP_SPEED
 	speedo = Speedo()
+	mode_display = Mode_Display()
+	mode = " --- "
+	select_pressed = False
+	select_display = make_select_screen(keypad)
+	print("2")
 	done = False
 	while not done:
+		print("while")
 		# --- Main event loop
 		for event in pygame.event.get():
+			print("event")
 			if event.type == pygame.QUIT:
 				done = True
 			if event.type == pygame.JOYBUTTONDOWN:
-				speed = joybuttondown_results(keypad, speed, sender)
+				if select_pressed == True:
+					mode = select_joybuttondown_results(keypad)
+					sender.send(mode)
+					select = False
+				else:
+					speed = joybuttondown_results(keypad, speed, sender)
 			if event.type == pygame.JOYAXISMOTION:
 				joyaxismotion_results(keypad, axes, speed, sender)
+		
 		# --- Update Display
 		screen.fill(WHITE)
-		screen.blit(keypad.background_image, keypad.xy_position)
+		if select_pressed == True:
+			screen.blit(select_display, [0, 0])
+		else:
+			screen.blit(keypad.background_image, keypad.xy_position)
 		for i in range(buttons):
 			button = keypad.device.get_button(i)
 			if button:
@@ -229,7 +294,10 @@ def main():
 				screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
 			elif axis < -TOLERANCE:
 				screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
-		screen.blit(speedo.update(speed), [10,10])
+			speedo.update(speed)
+			screen.blit(speedo.image, [10,10])
+			mode_display.update(mode)
+			screen.blit(mode_display.image, [0,460])
 		pygame.display.flip()
 		clock.tick(60)
 	pygame.quit()
@@ -240,4 +308,3 @@ class Shell(object):
 
 if __name__ == "__main__":
     main()
-	
