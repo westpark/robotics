@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os, sys
 import zmq
 
 from . import config
@@ -23,8 +24,8 @@ class Sender(SocketBase):
         super().__init__(listen_on_ip, listen_on_port, zmq.REQ, "connect")
 
     def send(self, command):
-        self.socket.send(command.encode(config.CODEC))
-        return self.socket.recv().decode(config.CODEC)
+        self.socket.send_string(encoding=config.CODEC)
+        return self.socket.recv_string(encoding=config.CODEC)
 
 class Publisher(SocketBase):
     
@@ -42,7 +43,45 @@ class Subscriber(SocketBase):
 
     def subscribe(self, pattern=""):
         self.socket.setsockopt_string(zmq.SUBSCRIBE, pattern)
+    
+    def get_message(self):
+        try:
+            message_bytes = self.socket.recv_string(zmq.NOBLOCK, encoding=config.CODEC)
+        except zmq.ZMQError as exc:
+            if exc.errno == zmq.EAGAIN:
+                return None
+            else:
+                raise
+        else:
+            return message_bytes.strip().lower()
 
     def __iter__(self):
         while True:
-            yield socket.recv_string()
+            message = self.get_message()
+            if message:
+                yield message
+
+def demo_publish():
+    import time
+    publisher = Publisher()
+    i = 0
+    while True:
+        print(i)
+        publisher.publish(str(i))
+        time.sleep(0.5)
+        i += 1
+        
+def demo_subscribe():
+    subscriber = Subscriber()
+    subscriber.subscribe()
+    for message in subscriber:
+        print(message)
+
+def demo(action="publish"):
+    if action == "publish":
+        demo_publish()
+    else:
+        demo_subscribe()
+
+if __name__ == '__main__':
+    demo(*sys.argv[1:])
