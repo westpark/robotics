@@ -62,6 +62,9 @@ class Controller(object):
             raise
         except Exception as exc:
             log.exception("Problem executing action %s", action)
+
+    def handle_exit(self):
+        self.stop_event.set()
     
     def handle_commands(self):
         while True:
