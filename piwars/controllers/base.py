@@ -51,7 +51,7 @@ class Controller(object):
         
         log.debug("Action = %s, Params = %s", action, params)
         try:
-            function = getattr(self, "handle_" % action, None)
+            function = getattr(self, "handle_%s" % action, None)
             if not function:
                 function = getattr(self.robot, action, None)
             if function:
@@ -68,11 +68,11 @@ class Controller(object):
     def handle_commands(self):
         while True:
             try:
-                action, params= self.command_queue.get_nowait()
+                action, params = self.command_queue.get_nowait()
             except queue.Empty:
                 return
             else:
-                self.dispatch(action, params)
+                return self.dispatch(action, params)
 
     def queue_command(self, action, params):
         """Normalise and queue a non-null command.
@@ -118,6 +118,9 @@ class Controller(object):
             except KeyboardInterrupt:
                 log.warn("Closing Controller gracefully...")
                 self.stop_event.set()
+            except NoSuchActionError as err:
+                log.error(err)
+                continue
             except:
                 log.exception("Problem in Controller")
                 self.stop_event.set()

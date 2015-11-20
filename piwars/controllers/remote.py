@@ -22,9 +22,6 @@ class Controller(base.Controller):
         listen_on_ip=config.LISTEN_ON_IP, listen_on_port=config.LISTEN_ON_PORT
     ):
         super().__init__(robot)
-        self._init_socket(listen_on_ip, listen_on_port)
-    
-    def _init_socket(self, listen_on_ip, listen_on_port):
         self.socket = comms.Receiver(listen_on_ip, listen_on_port)
     
     def get_remote_request(self):
