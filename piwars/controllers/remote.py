@@ -30,7 +30,10 @@ class Controller(base.Controller):
         If no message is available without blocking (as opposed to a blank 
         message), return None
         """
-        return self.socket.receive(block=True)
+        while True:
+            message = self.socket.receive(block=False)
+            if message:
+                return message
     
     def send_remote_response(self, response):
         """Send a unicode object as reply to the most recently-issued command
@@ -47,6 +50,10 @@ class Controller(base.Controller):
         later point, eg when the command has been processed.
         """
         command = self.get_remote_request()
+        #
+        # For now, just ACK always; later we need to find
+        # a way to return useful errors
+        #
         self.send_remote_response("ACK")
         return command
 
