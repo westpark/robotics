@@ -56,4 +56,3 @@ docs/_build/
 # PyBuilder
 target/
 /piwars.local.ini
-/piwars/shells/Thumbs.db
