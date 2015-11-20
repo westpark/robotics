@@ -15,6 +15,11 @@ TURN_RIGHT_COMMAND = "turn right {}".format(TURN_FRACTION)
 FORWARD_COMMAND = "forward"
 BACK_COMMAND = "backward"
 STOP_COMMAND = "stop"
+AUTO_START_COMMAND = "auto start"
+AUTO_STOP_COMMAND = "auto stop"
+THREE_POINT_TURN_COMMAND = "mode 3point"
+SPRINT_COMMAND = "mode sprint"
+MANUAL_COMMAND = "mode manual"
 
 HERE = os.path.dirname(__file__)
 
@@ -63,11 +68,13 @@ class Thin_Key(Key):
 		pygame.draw.line(image, RED, [0, length], [length, 0], 30)
 		super().__init__(image, xy_position)
 
-class Select_Screen_Item(object):
-	def __init__(self, button, xy_position, label, command, offset = 50):
+class Screen_Item(object):
+	def __init__(self, button, xy_position, label, command, to_screen = None, offset = 50):
+		font = pygame.font.Font(None, 36)
+		self.label = font.render(label, True, BLACK)
 		self.button = button
-		self.label = label
 		self.command = command
+		self.to_screen = to_screen
 		self.button_xy = xy_position
 		self.label_xy = [xy_position[0] + offset, xy_position[1]]
 
@@ -92,6 +99,12 @@ class Snes_Keypad(Keypad):
 	SPEED_DOWN_BUTTON = 4
 	SPEED_UP_BUTTON = 5
 	STOP_BUTTON = 9
+	AUTO_START_BUTTON = 0
+	AUTO_STOP_BUTTON = 2
+	AUTO_EXIT_BUTTON = 9
+	MODE_THREE_POINT_BUTTON = 0
+	MODE_SPRINT_BUTTON = 1
+	MODE_MANUAL_BUTTON = 2
 
 	def __init__(self, xy_position):
 		arrows_center_x = 85 + xy_position[0]
@@ -152,10 +165,17 @@ class Snes_Keypad(Keypad):
 		]
 		
 		select_x = 200
-		select_screen_items = (Select_Screen_Item(keys[0], [select_x, 100], "3 Point Turn", "THREE POINT TURN COMMAND"),
-						Select_Screen_Item(keys[1], [select_x, 200], "Gulley Race", "GULLEY RACE COMMAND"),
-						Select_Screen_Item(keys[2], [select_x, 300], "Manual Control", "MANUAL CONTROL COMMAND"),
-						)
+		mode_screens = ('NORMAL SCREEN PLACEHOLDER'
+						(
+						Screen_Item(MODE_THREE_POINT_BUTTON, [select_x, 100], "3 Point Turn", THREE_POINT_TURN_COMMAND, 2),
+						Screen_Item(MODE_SPINT_BUTTON, [select_x, 200], "Sprint", SPRINT_COMMAND, 2),
+						Screen_Item(MODE_MANUAL_BUTTON, [select_x, 300], "Manual Control", MANUAL_COMMAND, 0),
+						),
+						(
+						Screen_Item(AUTO_START_BUTTON, [select_x, 100], "Start", AUTO_START_COMMAND),
+						Screen_Item(AUTO_STOP_BUTTON, [select_x, 200], "Stop", AUTO_STOP_COMMAND),
+						Screen_Item(AUTO_EXIT_BUTTON, [select_x, 300], "Exit", MANUAL_COMMAND, 0),
+						))
 		background_image = pygame.image.load(self.BACKGROUND_IMAGE).convert()
 		background_image.set_colorkey(WHITE)
 		super().__init__(keys, axes, background_image, xy_position, select_screen_items)
@@ -184,26 +204,16 @@ class Mode_Display(object):
 		self.image.blit(self.fixed_text, (0, 0))
 		self.image.blit(show_mode, (100, 0))
 		
-def make_select_screen(keypad):
-	image = pygame.Surface((500, 500))
-	image.fill(WHITE)
-	font = pygame.font.Font(None, 36)
-	for item in keypad.select_screen_items:
-		image.blit(item.button.image, item.button_xy)
-		label = font.render(item.label, True, BLACK)
-		image.blit(label, item.label_xy)		
-	return image
 	
 # --- Event Result functions
-def select_joybuttondown_results(keypad):
-	if keypad.device.get_button(keypad.SELECT_3_POINT_TURN_BUTTON):
-		mode = "Three Point Turn"
-	elif keypad.device.get_button(keypad.SELECT_GULLEY_RACE_BUTTON):
-		mode = "Gulley Race"
-	elif keypad.device.get_button(keypad.SELECT_MANUAL_DRIVE_BUTTON):
-		mode = "Manual Drive"
-	return mode
-	
+def mode_joybuttondown_results(keypad, screen_number):
+	for item in keypad.mode_screens[screen_number]:
+		if keypad.device.get_button(item.button):
+			sender.send(item.command)
+			if item.to_screen:
+				return to_screen
+	return screen_number
+
 def joybuttondown_results(keypad, speed, sender):
 	if keypad.device.get_button(keypad.SPEED_DOWN_BUTTON) and speed > MIN_SPEED + TOLERANCE:
 		speed -= SPEED_STEP
@@ -224,8 +234,8 @@ def joybuttondown_results(keypad, speed, sender):
 	elif keypad.device.get_button(keypad.STOP_BUTTON):
 		sender.send(STOP_COMMAND)
 	elif keypad.device.get_button(keypad.SELECT_BUTTON):
-		
-	return speed
+		return 1, speed
+	return 0, speed
 
 def joyaxismotion_results(keypad, axes, speed, sender):
 	axis_total = 0
@@ -243,7 +253,6 @@ def joyaxismotion_results(keypad, axes, speed, sender):
 
 	
 def main():
-	print("1")
 	pygame.init()
 	size = (500, 500)
 	screen = pygame.display.set_mode(size)
@@ -257,47 +266,48 @@ def main():
 	speedo = Speedo()
 	mode_display = Mode_Display()
 	mode = " --- "
-	select_pressed = False
+	screen_number = 0
 	select_display = make_select_screen(keypad)
-	print("2")
 	done = False
 	while not done:
-		print("while")
 		# --- Main event loop
 		for event in pygame.event.get():
-			print("event")
 			if event.type == pygame.QUIT:
 				done = True
 			if event.type == pygame.JOYBUTTONDOWN:
-				if select_pressed == True:
-					mode = select_joybuttondown_results(keypad)
-					sender.send(mode)
-					select = False
+				if screen_number == 0:
+					screen_number, speed = joybuttondown_results(keypad, speed, sender)
 				else:
-					speed = joybuttondown_results(keypad, speed, sender)
-			if event.type == pygame.JOYAXISMOTION:
+					screen_number = mode_joybutton_down_results(keypad, screen_number)
+			if event.type == pygame.JOYAXISMOTION and screen_number == 0:
 				joyaxismotion_results(keypad, axes, speed, sender)
 		
 		# --- Update Display
 		screen.fill(WHITE)
-		if select_pressed == True:
-			screen.blit(select_display, [0, 0])
-		else:
+		if screen_number == 0:
 			screen.blit(keypad.background_image, keypad.xy_position)
-		for i in range(buttons):
-			button = keypad.device.get_button(i)
-			if button:
-				screen.blit(keypad.keys[i].image, keypad.keys[i].xy_position)
-		for i in range(axes):
-			axis = keypad.device.get_axis(i)
-			if axis > TOLERANCE:
-				screen.blit(keypad.axes[i][1].image, keypad.axes[i][1].xy_position)
-			elif axis < -TOLERANCE:
-				screen.blit(keypad.axes[i][0].image, keypad.axes[i][0].xy_position)
+			for i in range(buttons):
+				button = keypad.device.get_button(i)
+				if button:
+					show_button = keypad.keys[i]
+					screen.blit(show_button.image, show_button.xy_position)
+			for i in range(axes):
+				axis = keypad.device.get_axis(i)
+				if axis > TOLERANCE:
+					arrow = keypad.axes[i][1]
+					screen.blit(arrow.image, arrow.xy_position)
+				elif axis < -TOLERANCE:
+					arrow = keypad.axes[i][0]
+					screen.blit(arrow.image, arrow.xy_position)
 			speedo.update(speed)
 			screen.blit(speedo.image, [10,10])
 			mode_display.update(mode)
 			screen.blit(mode_display.image, [0,460])
+		else:
+			for item in keypad.mode_items[screen_number]:
+				key = keypad.keys[item.button]
+				screen.blit(key.image, item.button_xy)
+				screen.blit(item.label, item.label_xy)
 		pygame.display.flip()
 		clock.tick(60)
 	pygame.quit()
