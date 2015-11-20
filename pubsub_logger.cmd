@@ -1,1 +1,1 @@
-py -3 -mpiwars.core.comms subscribe
+py -3 -mpiwars.core.comms subscribe INFO WARNING ERROR

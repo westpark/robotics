@@ -47,7 +47,7 @@ class Controller(object):
         """
         log.info("Dispatch on %s: %s", action, params)
         if not action:
-            return "NACK"
+            return
         
         log.debug("Action = %s, Params = %s", action, params)
         try:
@@ -57,22 +57,21 @@ class Controller(object):
             if function:
                 function(*params)
             else:
-                raise NoSuchActionError("No such action: %s" % action)
-            return "ACK"
+                log.warn("No such action: %s", action)
         except KeyboardInterrupt:
             raise
         except Exception as exc:
             log.exception("Problem executing action %s", action)
-            return "ERROR: %s" % exc
     
     def handle_commands(self):
         while True:
             try:
                 action, params = self.command_queue.get_nowait()
+                log.debug("action, params: %s, %s", action, params)
             except queue.Empty:
                 return
             else:
-                return self.dispatch(action, params)
+                self.dispatch(action, params)
 
     def queue_command(self, action, params):
         """Normalise and queue a non-null command.
@@ -118,9 +117,6 @@ class Controller(object):
             except KeyboardInterrupt:
                 log.warn("Closing Controller gracefully...")
                 self.stop_event.set()
-            except NoSuchActionError as err:
-                log.error(err)
-                continue
             except:
                 log.exception("Problem in Controller")
                 self.stop_event.set()

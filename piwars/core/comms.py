@@ -35,20 +35,22 @@ class SocketBase(object):
         else:
             return message
 
-    def send(self, command):
-        self.socket.send_string(command, encoding=config.CODEC)
-        return self.socket.recv_string(encoding=config.CODEC)
-
 class Receiver(SocketBase):
     
     def __init__(self, listen_on_ip=config.LISTEN_ON_IP, listen_on_port=config.LISTEN_ON_PORT):
         super().__init__(listen_on_ip, listen_on_port, zmq.REP, "bind")
         
+    def send(self, command):
+        self.socket.send_string(command, encoding=config.CODEC)
+
 class Sender(SocketBase):
 
     def __init__(self, listen_on_ip=config.LISTEN_ON_IP, listen_on_port=config.LISTEN_ON_PORT):
         super().__init__(listen_on_ip, listen_on_port, zmq.REQ, "connect")
 
+    def send(self, command):
+        self.socket.send_string(command, encoding=config.CODEC)
+        return self.socket.recv_string(encoding=config.CODEC)
 
 class Publisher(SocketBase):
     
@@ -92,18 +94,24 @@ def demo_publish():
         time.sleep(0.5)
         i += 1
         
-def demo_subscribe():
+def demo_subscribe(*topics):
     subscriber = Subscriber()
-    subscriber.subscribe()
+    print("Topics:", topics)
+    if topics:
+        for topic in topics:
+            subscriber.subscribe(topic)
+    else:
+        subscriber.subscribe()
+    
     print("Listening for messages...")
     for message in subscriber:
         print(message)
 
-def demo(action="publish"):
+def demo(action="publish", *args):
     if action == "publish":
-        demo_publish()
+        demo_publish(*args)
     else:
-        demo_subscribe()
+        demo_subscribe(*args)
 
 if __name__ == '__main__':
     demo(*sys.argv[1:])

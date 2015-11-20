@@ -24,7 +24,7 @@ LOGGING_FILEPATH = LOGGING_FILENAME
 
 level = logging.DEBUG
 console_formatter = logging.Formatter("%(message)s")
-pubsub_formatter = logging.Formatter("%(levelname)s %(message)s")
+pubsub_formatter = logging.Formatter("%(levelname)s %(name)s - %(message)s")
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s")
 
 handler = logging.FileHandler(
