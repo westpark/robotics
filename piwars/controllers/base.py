@@ -45,9 +45,9 @@ class Controller(object):
         Cascade KeyboardInterrupt
         If the handler raises an exception, fail with the exception message
         """
-        log.info("Dispatch on %s", command)
-        if not command:
-            return "OK"
+        log.info("Dispatch on %s: %s", action, params)
+        if not action:
+            return "NACK"
         
         log.debug("Action = %s, Params = %s", action, params)
         try:
@@ -58,7 +58,7 @@ class Controller(object):
                 function(*params)
             else:
                 raise NoSuchActionError("No such action: %s" % action)
-            return "OK"
+            return "ACK"
         except KeyboardInterrupt:
             raise
         except Exception as exc:

@@ -6,17 +6,15 @@ import logging.handlers
 from . import config        
 from . import comms
 
-class PubsubHandler(logging.handlers.Handler):
+class PubsubHandler(logging.Handler):
     
     def __init__(self, hostname, port, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.publisher = comms.Publisher(hostname, port)
     
-    def __emit__(self, record):
+    def emit(self, record):
         try:
-            msg = self.format(record)
-            self.publisher.publish(msg)
-            #~ self.flush()
+            self.publisher.publish(self.format(record))
         except Exception:
             self.handleError(record)
 
@@ -50,4 +48,6 @@ def logger(name):
     _logger.setLevel(level)
     _logger.addHandler(handler)
     _logger.addHandler(stderr_handler)
+    _logger.addHandler(pubsub_handler)
     return _logger
+    
