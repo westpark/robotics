@@ -2,7 +2,7 @@
 import os, sys
 import shlex
 
-from . import comms
+from ..core import comms
 
 class Shell(object):
 

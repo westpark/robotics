@@ -45,30 +45,29 @@ class Controller(object):
         Cascade KeyboardInterrupt
         If the handler raises an exception, fail with the exception message
         """
-        log.info("Dispatch on %s", command)
-        if not command:
-            return "OK"
+        log.info("Dispatch on %s: %s", action, params)
+        if not action:
+            return
         
         log.debug("Action = %s, Params = %s", action, params)
         try:
-            function = getattr(self, "handle_" % action, None)
+            function = getattr(self, "handle_%s" % action, None)
             if not function:
                 function = getattr(self.robot, action, None)
             if function:
                 function(*params)
             else:
-                raise NoSuchActionError("No such action: %s" % action)
-            return "OK"
+                log.warn("No such action: %s", action)
         except KeyboardInterrupt:
             raise
         except Exception as exc:
             log.exception("Problem executing action %s", action)
-            return "ERROR: %s" % exc
     
     def handle_commands(self):
         while True:
             try:
-                action, params= self.command_queue.get_nowait()
+                action, params = self.command_queue.get_nowait()
+                log.debug("action, params: %s, %s", action, params)
             except queue.Empty:
                 return
             else:
