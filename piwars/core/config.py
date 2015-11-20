@@ -26,6 +26,4 @@ ini.read([global_filepath, local_filepath])
 #
 LISTEN_ON_IP = ini['network']['listen_on_ip']
 LISTEN_ON_PORT = ini['network']['listen_on_port']
-PUBSUB_LISTEN_ON_IP = ini['pubsub']['listen_on_ip']
-PUBSUB_LISTEN_ON_PORT = ini['pubsub']['listen_on_port']
 CODEC = ini['i18n']['codec']
