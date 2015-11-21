@@ -4,38 +4,43 @@ from ..core import logging
 from . import base
 from . import robot
 
+NEVER = base.NEVER
+
 class Robot(base.BaseRobot):
     
     def __init__(self):
         super().__init__()
         self.robot = robot.Robot()
 
-    def forward(self, speed=1):
-        speed=float(speed)
-        print('forward', speed)
-        self.robot.forward(speed)
+    def forward(self, speed=1, stop_after_secs=NEVER):
+        self.robot.forward(float(speed))
+        if stop_after_secs is not NEVER:
+            time.sleep(float(stop_after_secs))
+            self.robot.stop()
         
-    def backward(self, speed=1):
-        speed=float(speed)
-        print('backward', speed)
-        self.robot.backward(speed)
+    def backward(self, speed=1, stop_after_secs=NEVER):
+        self.robot.backward(float(speed))
+        if stop_after_secs is not NEVER:
+            time.sleep(float(stop_after_secs))
+            self.robot.stop()
         
-    def left(self, speed=1):
-        speed=float(speed)
-        print('left', speed)
-        self.robot.left(speed)
+    def left(self, speed=1, stop_after_secs=NEVER):
+        self.robot.left(float(speed))
+        if stop_after_secs is not NEVER:
+            time.sleep(float(stop_after_secs))
+            self.robot.stop()
 
-    def right(self, speed=1):
-        speed=float(speed)
-        print('right', speed)
-        self.robot.right(speed)
+    def right(self, speed=1, stop_after_secs=NEVER):
+        self.robot.right(float(speed))
+        if stop_after_secs is not NEVER:
+            time.sleep(float(stop_after_secs))
+            self.robot.stop()
 
-    def turn(self, direction, extent=1.0, speed=1.0):
-        extent = float(extent)
-        speed = float(speed)
-        print("turn", direction, extent, speed)
-        self.robot.turn(direction, extent, speed)
+    def turn(self, direction, extent=1.0, speed=1.0, stop_after_secs=NEVER):
+        self.robot.turn(direction, float(extent), float(speed))
+        if stop_after_secs is not NEVER:
+            time.sleep(float(stop_after_secs))
+            self.robot.stop()
         
     def stop(self):
-        print('stop')
         self.robot.stop()
