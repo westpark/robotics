@@ -103,6 +103,9 @@ class Controller(object):
         """
         pass
     
+    def finish(self):
+        self.stop_event.set()
+    
     def finished(self):
         return self.stop_event.is_set()
     
