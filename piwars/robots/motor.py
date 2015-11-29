@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+
 from ..core import config
 from ..core import logging
 from . import base
@@ -14,33 +16,28 @@ class Robot(base.BaseRobot):
 
     def forward(self, speed=1, stop_after_secs=NEVER):
         self.robot.forward(float(speed))
-        if stop_after_secs is not NEVER:
-            time.sleep(float(stop_after_secs))
-            self.robot.stop()
+        self.stop(stop_after_secs)
         
     def backward(self, speed=1, stop_after_secs=NEVER):
         self.robot.backward(float(speed))
-        if stop_after_secs is not NEVER:
-            time.sleep(float(stop_after_secs))
-            self.robot.stop()
+        self.stop(stop_after_secs)
+    back = backward
         
     def left(self, speed=1, stop_after_secs=NEVER):
         self.robot.left(float(speed))
-        if stop_after_secs is not NEVER:
-            time.sleep(float(stop_after_secs))
-            self.robot.stop()
+        self.stop(stop_after_secs)
 
     def right(self, speed=1, stop_after_secs=NEVER):
         self.robot.right(float(speed))
-        if stop_after_secs is not NEVER:
-            time.sleep(float(stop_after_secs))
-            self.robot.stop()
+        self.stop(stop_after_secs)
 
     def turn(self, direction, extent=1.0, speed=1.0, stop_after_secs=NEVER):
         self.robot.turn(direction, float(extent), float(speed))
-        if stop_after_secs is not NEVER:
-            time.sleep(float(stop_after_secs))
-            self.robot.stop()
+        self.stop(stop_after_secs)
         
-    def stop(self):
-        self.robot.stop()
+    def stop(self, delay_secs=0):
+        if delay_secs is NEVER:
+            return
+        else:
+            time.sleep(float(delay_secs))
+            self.robot.stop()

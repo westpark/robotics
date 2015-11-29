@@ -5,7 +5,8 @@ import importlib
 
 from .. import robots
 
-if __name__ == '__main__':
+name = __name__.split(".")[-1]
+if name == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--controller", default="remote")
     parser.add_argument("--robot", default="text")

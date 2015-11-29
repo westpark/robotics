@@ -3,7 +3,8 @@
 import argparse
 import importlib
 
-if __name__ == '__main__':
+name = __name__.split(".")[-1]
+if name == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--shell", default="text")
     args = parser.parse_args()

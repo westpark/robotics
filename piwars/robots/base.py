@@ -21,6 +21,7 @@ class BaseRobot(object):
         
     def backward(self, speed=1, stop_after_secs=NEVER):
         pass
+    back = backward
         
     def left(self, speed=1, stop_after_secs=NEVER):
         pass
