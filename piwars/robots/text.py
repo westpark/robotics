@@ -5,6 +5,8 @@ from ..core import config
 from ..core import logging
 from . import base
 
+NEVER = base.NEVER
+
 class Robot(base.BaseRobot):
 
     def forward(self, *args):
@@ -22,7 +24,7 @@ class Robot(base.BaseRobot):
     def stop(self, *args):
         print("stop", args)
 
-    def turn(self, direction, extent=1.0, speed=1.0):
+    def turn(self, direction, extent=1.0, speed=1.0, stop_after_secs=NEVER):
         extent = float(extent)
         speed = float(speed)
-        print("turn", direction, extent, speed)
+        print("turn", direction, extent, speed, stop_after_secs)

@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+import time
+
 from ..core import config
 from ..core import logging
 from . import base
 from . import robot
+
+NEVER = base.NEVER
 
 class Robot(base.BaseRobot):
     
@@ -10,32 +14,30 @@ class Robot(base.BaseRobot):
         super().__init__()
         self.robot = robot.Robot()
 
-    def forward(self, speed=1):
-        speed=float(speed)
-        print('forward', speed)
-        self.robot.forward(speed)
+    def forward(self, speed=1, stop_after_secs=NEVER):
+        self.robot.forward(float(speed))
+        self.stop(stop_after_secs)
         
-    def backward(self, speed=1):
-        speed=float(speed)
-        print('backward', speed)
-        self.robot.backward(speed)
+    def backward(self, speed=1, stop_after_secs=NEVER):
+        self.robot.backward(float(speed))
+        self.stop(stop_after_secs)
+    back = backward
         
-    def left(self, speed=1):
-        speed=float(speed)
-        print('left', speed)
-        self.robot.left(speed)
+    def left(self, speed=1, stop_after_secs=NEVER):
+        self.robot.left(float(speed))
+        self.stop(stop_after_secs)
 
-    def right(self, speed=1):
-        speed=float(speed)
-        print('right', speed)
-        self.robot.right(speed)
+    def right(self, speed=1, stop_after_secs=NEVER):
+        self.robot.right(float(speed))
+        self.stop(stop_after_secs)
 
-    def turn(self, direction, extent=1.0, speed=1.0):
-        extent = float(extent)
-        speed = float(speed)
-        print("turn", direction, extent, speed)
-        self.robot.turn(direction, extent, speed)
+    def turn(self, direction, extent=1.0, speed=1.0, stop_after_secs=NEVER):
+        self.robot.turn(direction, float(extent), float(speed))
+        self.stop(stop_after_secs)
         
-    def stop(self):
-        print('stop')
-        self.robot.stop()
+    def stop(self, delay_secs=0):
+        if delay_secs is NEVER:
+            return
+        else:
+            time.sleep(float(delay_secs))
+            self.robot.stop()
