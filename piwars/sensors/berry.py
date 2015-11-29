@@ -33,151 +33,185 @@ G_GAIN = 0.070  # [deg/s/LSB]  If you change the dps for gyro, you need to updat
 LP = 0.041            # Loop period = 41ms.   This needs to match the time it takes each loop to run
 AA =  0.80      # Complementary filter constant
 
+class Sensor(object):
 
-def writeACC(register,value):
+    def __init__(self, n_smbus=1):
+        self.bus = smbus.SMBus(n_smbus)
+        self.init()
+
+    def writeACC(self, register,value):
         bus.write_byte_data(ACC_ADDRESS , register, value)
         return -1
 
-def writeMAG(register,value):
+    def writeMAG(self, register,value):
         bus.write_byte_data(MAG_ADDRESS, register, value)
         return -1
 
-def writeGRY(register,value):
+    def writeGRY(self, register,value):
         bus.write_byte_data(GYR_ADDRESS, register, value)
         return -1
 
-
-
-def readACCx():
+    def readACCx(self):
         acc_l = bus.read_byte_data(ACC_ADDRESS, OUT_X_L_A)
         acc_h = bus.read_byte_data(ACC_ADDRESS, OUT_X_H_A)
         acc_combined = (acc_l | acc_h <<8)
 
         return acc_combined  if acc_combined < 32768 else acc_combined - 65536
 
-
-def readACCy():
+    def readACCy(self):
         acc_l = bus.read_byte_data(ACC_ADDRESS, OUT_Y_L_A)
         acc_h = bus.read_byte_data(ACC_ADDRESS, OUT_Y_H_A)
         acc_combined = (acc_l | acc_h <<8)
 
         return acc_combined  if acc_combined < 32768 else acc_combined - 65536
 
-
-def readACCz():
+    def readACCz(self):
         acc_l = bus.read_byte_data(ACC_ADDRESS, OUT_Z_L_A)
         acc_h = bus.read_byte_data(ACC_ADDRESS, OUT_Z_H_A)
         acc_combined = (acc_l | acc_h <<8)
 
         return acc_combined  if acc_combined < 32768 else acc_combined - 65536
 
-
-def readMAGx():
+    def readMAGx(self):
         mag_l = bus.read_byte_data(MAG_ADDRESS, OUT_X_L_M)
         mag_h = bus.read_byte_data(MAG_ADDRESS, OUT_X_H_M)
         mag_combined = (mag_l | mag_h <<8)
 
         return mag_combined  if mag_combined < 32768 else mag_combined - 65536
 
-
-def readMAGy():
+    def readMAGy(self):
         mag_l = bus.read_byte_data(MAG_ADDRESS, OUT_Y_L_M)
         mag_h = bus.read_byte_data(MAG_ADDRESS, OUT_Y_H_M)
         mag_combined = (mag_l | mag_h <<8)
 
         return mag_combined  if mag_combined < 32768 else mag_combined - 65536
 
-
-def readMAGz():
+    def readMAGz(self):
         mag_l = bus.read_byte_data(MAG_ADDRESS, OUT_Z_L_M)
         mag_h = bus.read_byte_data(MAG_ADDRESS, OUT_Z_H_M)
         mag_combined = (mag_l | mag_h <<8)
 
         return mag_combined  if mag_combined < 32768 else mag_combined - 65536
 
-
-
-def readGYRx():
+    def readGYRx(self):
         gyr_l = bus.read_byte_data(GYR_ADDRESS, OUT_X_L_G)
         gyr_h = bus.read_byte_data(GYR_ADDRESS, OUT_X_H_G)
         gyr_combined = (gyr_l | gyr_h <<8)
 
         return gyr_combined  if gyr_combined < 32768 else gyr_combined - 65536
-  
-
-def readGYRy():
+ 
+    def readGYRy(self):
         gyr_l = bus.read_byte_data(GYR_ADDRESS, OUT_Y_L_G)
         gyr_h = bus.read_byte_data(GYR_ADDRESS, OUT_Y_H_G)
         gyr_combined = (gyr_l | gyr_h <<8)
 
         return gyr_combined  if gyr_combined < 32768 else gyr_combined - 65536
 
-def readGYRz():
+    def readGYRz(self):
         gyr_l = bus.read_byte_data(GYR_ADDRESS, OUT_Z_L_G)
         gyr_h = bus.read_byte_data(GYR_ADDRESS, OUT_Z_H_G)
         gyr_combined = (gyr_l | gyr_h <<8)
 
         return gyr_combined  if gyr_combined < 32768 else gyr_combined - 65536
 
+    def init_acc(self):
+        #initialise the accelerometer
+        writeACC(CTRL_REG1_XM, 0b01100111) #z,y,x axis enabled, continuos update,  100Hz data rate
+        writeACC(CTRL_REG2_XM, 0b00100000) #+/- 16G full scale
+    
+    def init_mag(self):
+        #initialise the magnetometer
+        writeMAG(CTRL_REG5_XM, 0b11110000) #Temp enable, M data rate = 50Hz
+        writeMAG(CTRL_REG6_XM, 0b01100000) #+/-12gauss
+        writeMAG(CTRL_REG7_XM, 0b00000000) #Continuous-conversion mode
+    
+    def init_gyr(self):
+        #initialise the gyroscope
+        writeGRY(CTRL_REG1_G, 0b00001111) #Normal power mode, all axes enabled
+        writeGRY(CTRL_REG4_G, 0b00110000) #Continuos update, 2000 dps full scale
+    
+    def init(self):
+        self.init_acc()
+        self.init_mag()
+        self.init_gyr()
+    
+    def get_acc(self):
+        ACCx, ACCy, ACCz = self.readACCx(), self.readACCy(), self.readACCz()
+        AccXangle = (math.atan2(ACCy, ACCz) + M_PI) * RAD_TO_DEG
+        AccYangle = (math.atan2(ACCz, ACCx) + M_PI) * RAD_TO_DEG
 
+        #Change the rotation value of the accelerometer to -/+ 180 and move the Y axis '0' point to up.
+        #Two different pieces of code are used depending on how your IMU is mounted.
+        #If IMU is upside down
+        #
+        #if AccXangle >180:
+        #        AccXangle -= 360.0
+        #AccYangle-=90
+        #if (AccYangle >180):
+        #        AccYangle -= 360.0
 
+        #If IMU is up the correct way, use these lines
+        AccXangle -= 180.0
+        if AccYangle > 90:
+            AccYangle -= 270.0
+        else:
+            AccYangle += 90.0
         
-#initialise the accelerometer
-writeACC(CTRL_REG1_XM, 0b01100111) #z,y,x axis enabled, continuos update,  100Hz data rate
-writeACC(CTRL_REG2_XM, 0b00100000) #+/- 16G full scale
-
-#initialise the magnetometer
-writeMAG(CTRL_REG5_XM, 0b11110000) #Temp enable, M data rate = 50Hz
-writeMAG(CTRL_REG6_XM, 0b01100000) #+/-12gauss
-writeMAG(CTRL_REG7_XM, 0b00000000) #Continuous-conversion mode
-
-#initialise the gyroscope
-writeGRY(CTRL_REG1_G, 0b00001111) #Normal power mode, all axes enabled
-writeGRY(CTRL_REG4_G, 0b00110000) #Continuos update, 2000 dps full scale
-
-gyroXangle = 0.0
-gyroYangle = 0.0
-gyroZangle = 0.0
-CFangleX = 0.0
-CFangleY = 0.0
-
-
-
-
-while True:
-        a = datetime.datetime.now()
-        
-        #Read our accelerometer,gyroscope and magnetometer  values
-        ACCx = readACCx()
-        ACCy = readACCy()
-        ACCz = readACCz()
-        GYRx = readGYRx()
-        GYRy = readGYRx()
-        GYRz = readGYRx()
-        MAGx = readMAGx()
-        MAGy = readMAGy()
-        MAGz = readMAGz()
-
-        ##Convert Accelerometer values to degrees
-        AccXangle =  (math.atan2(ACCy,ACCz)+M_PI)*RAD_TO_DEG
-        AccYangle =  (math.atan2(ACCz,ACCx)+M_PI)*RAD_TO_DEG
-
-
-
+        return AccXangle, AccYangle
+    
+    def get_gyr_rates(self):
+        GYRx, GYRy, GYRz = sensor.readGYRx(), sensor.readGYRy(), sensor.readGYRz()        
+        return GYRx * G_GAIN, GYRy * G_GAIN, GYRz * G_GAIN
         #Convert Gyro raw to degrees per second
-        rate_gyr_x =  GYRx * G_GAIN
-        rate_gyr_y =  GYRy * G_GAIN
-        rate_gyr_z =  GYRz * G_GAIN
+        #~ rate_gyr_x =  GYRx * G_GAIN
+        #~ rate_gyr_y =  GYRy * G_GAIN
+        #~ rate_gyr_z =  GYRz * G_GAIN
 
-
+    def get_gyr_angles(self, rate_gyr_x, rate_gyr_y, rate_gyr_z):
         #Calculate the angles from the gyro. LP = loop period 
-        gyroXangle+=rate_gyr_x*LP
-        gyroYangle+=rate_gyr_y*LP
-        gyroZangle+=rate_gyr_z*LP
+        return rate_gyr_x * LP, rate_gyr_y * LP, rate_gyr_z * LP
+        #~ gyroXangle += rate_gyr_x * LP
+        #~ gyroYangle += rate_gyr_y * LP
+        #~ gyroZangle += rate_gyr_z * LP
 
+def main():
+    gyroXangle = 0.0
+    gyroYangle = 0.0
+    gyroZangle = 0.0
+    CFangleX = 0.0
+    CFangleY = 0.0
+    
+    sensor = Sensor()
 
+    while True:
+        a = datetime.datetime.now()
+        #Read our accelerometer,gyroscope and magnetometer  values
+        #~ ACCx = sensor.readACCx()
+        #~ ACCy = sensor.readACCy()
+        #~ ACCz = sensor.readACCz()
+        #~ GYRx = sensor.readGYRx()
+        #~ GYRy = sensor.readGYRx()
+        #~ GYRz = sensor.readGYRx()
+        MAGx = sensor.readMAGx()
+        MAGy = sensor.readMAGy()
+        MAGz = sensor.readMAGz()
 
+        AccXangle, AccYangle = sensor.get_acc()
+        ##Convert Accelerometer values to degrees
+        #~ AccXangle = (math.atan2(ACCy, ACCz) + M_PI) * RAD_TO_DEG
+        #~ AccYangle = (math.atan2(ACCz, ACCx) + M_PI) * RAD_TO_DEG
 
+        #~ #Convert Gyro raw to degrees per second
+        #~ rate_gyr_x =  GYRx * G_GAIN
+        #~ rate_gyr_y =  GYRy * G_GAIN
+        #~ rate_gyr_z =  GYRz * G_GAIN
+        rate_gyr_x, rate_gyr_y, rate_gyr_z = sensor.get_gyr_rates()
+        gyroXangle, gyroYangle, gyroZangle = sensor.get_gyr_angles(rate_gyr_x, rate_gyr_y, rate_gyr_z)
+
+        #~ #Calculate the angles from the gyro. LP = loop period 
+        #~ gyroXangle += rate_gyr_x * LP
+        #~ gyroYangle += rate_gyr_y * LP
+        #~ gyroZangle += rate_gyr_z * LP
 
         #Change the rotation value of the accelerometer to -/+ 180 and move the Y axis '0' point to up.
         #Two different pieces of code are used depending on how your IMU is mounted.
@@ -191,44 +225,40 @@ while True:
         
 
         #If IMU is up the correct way, use these lines
-        AccXangle -= 180.0
-        if AccYangle > 90:
-                AccYangle -= 270.0
-        else:
-                AccYangle += 90.0
-
+        #~ AccXangle -= 180.0
+        #~ if AccYangle > 90:
+            #~ AccYangle -= 270.0
+        #~ else:
+            #~ AccYangle += 90.0
 
         #Complementary filter used to combine the accelerometer and gyro values.
-        CFangleX=AA*(CFangleX+rate_gyr_x*LP) +(1 - AA) * AccXangle
-        CFangleY=AA*(CFangleY+rate_gyr_y*LP) +(1 - AA) * AccYangle
-
+        CFangleX=AA * (CFangleX + rate_gyr_x * LP) + (1 - AA) * AccXangle
+        CFangleY=AA * (CFangleY + rate_gyr_y * LP) + (1 - AA) * AccYangle
 
 
         #Calculate heading
-        heading = 180 * math.atan2(MAGy,MAGx)/M_PI
-
+        heading = 180 * math.atan2(MAGy, MAGx) / M_PI
         if heading < 0:
-                 heading += 360
-
+            heading += 360
 
         #Normalize accelerometer raw values.
-        accXnorm = ACCx/math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
-        accYnorm = ACCy/math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
+        accXnorm = ACCx / math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
+        accYnorm = ACCy / math.sqrt(ACCx * ACCx + ACCy * ACCy + ACCz * ACCz)
 
 
         #Calculate pitch and roll
         pitch = math.asin(accXnorm)
-        roll = -math.asin(accYnorm/math.cos(pitch))
+        roll = -math.asin(accYnorm / math.cos(pitch))
 
         #Calculate the new tilt compensated values
-        magXcomp = MAGx*math.cos(pitch)+MAGz*math.sin(pitch)
-        magYcomp = MAGx*math.sin(roll)*math.sin(pitch)+MAGy*math.cos(roll)-MAGz*math.sin(roll)*math.cos(pitch)
+        magXcomp = MAGx * math.cos(pitch) + MAGz * math.sin(pitch)
+        magYcomp = MAGx * math.sin(roll) * math.sin(pitch) + MAGy * math.cos(roll) - MAGz * math.sin(roll) * math.cos(pitch)
 
         #Calculate tiles compensated heading
-        tiltCompensatedHeading = 180 * math.atan2(magYcomp,magXcomp)/M_PI
+        tiltCompensatedHeading = 180 * math.atan2(magYcomp, magXcomp) / M_PI
 
         if tiltCompensatedHeading < 0:
-                tiltCompensatedHeading += 360
+            tiltCompensatedHeading += 360
 
          print ("\033[1;34;40mACCX Angle %5.2f ACCY Angle %5.2f\033[1;31;40m\tGRYX Angle %5.2f  GYRY Angle %5.2f  GYRZ Angle %5.2f \033[1;35;40m    \tCFangleX Angle %5.2f \033[1;36;40m  CFangleY Angle %5.2f \33[1;32;40m  HEADING  %5.2f \33[1;37;40m tiltCompensatedHeading %5.2f\033[0m  " % (AccXangle, AccYangle,gyroXangle,gyroYangle,gyroZangle,CFangleX,CFangleY,heading,tiltCompensatedHeading))
 
@@ -239,6 +269,5 @@ while True:
 
         print "Loop Time |",  c.microseconds/1000,"|",
 
-
-
-
+if __name__ == '__main__':
+    main(*sys.argv[1:])
