@@ -5,7 +5,7 @@ import atexit
 
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
-atexit.register(GPIO.cleanup)
+#~ atexit.register(GPIO.cleanup)
 
 import time
 
@@ -21,8 +21,8 @@ class Sensor(object):
     
     def __init__(self, trigger_pin, echo_pin, name):
         self.name = name
-        self.trigger_pin = trigger_pin
-        self.echo_pin = echo_pin
+        self.trigger_pin = int(trigger_pin)
+        self.echo_pin = int(echo_pin)
         self.initialise_pins()
 
     def initialise_pins(self):

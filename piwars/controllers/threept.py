@@ -24,13 +24,13 @@ class Controller(remote.Controller):
            super().dispatch(action, params) 
 
     def drive(self):
-        self.robot.forward(stop_after_secs=4)
+        self.robot.forward(stop_after_secs=4.5)
         time.sleep(1)
-        self.robot.turn(direction="left", extent=0.33, speed=1, stop_after_secs=4)        
+        self.robot.turn(direction="left", extent=0.3, stop_after_secs=2)        
         time.sleep(1)
         self.robot.backward(stop_after_secs=2.0)
         time.sleep(1)
-        self.robot.turn(direction="left", extent=0.33, speed=1, stop_after_secs=4)        
+        self.robot.turn(direction="right", extent=0.3, stop_after_secs=2)
         time.sleep(1)
         self.robot.forward(stop_after_secs=3.0)
         sys.exit()
