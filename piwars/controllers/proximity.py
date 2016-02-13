@@ -4,6 +4,7 @@ import collections
 import itertools
 import queue
 import threading
+import time
 
 from ..core import config, exc, logging, utils
 log = logging.logger(__package__)
@@ -19,14 +20,9 @@ from ..sensors import ultrasonic
 #
 
 #
-# How much difference does there have to be between one
-# sensor and the other to constitute a swerve?
+# How close is close enough?
 #
-OFFSET_THRESHOLD = 10
-PROXIMITY_THRESHOLD = 45
-
-TRIGGER_PIN = 3
-ECHO_PIN = 4
+PROXIMITY_THRESHOLD = 200
 
 class Controller(remote.Controller):
 
@@ -41,7 +37,10 @@ class Controller(remote.Controller):
         for position in ["right"]:
             sensor_name = "%s_ultrasonic" % position
             sensor_config = config.ini[sensor_name]
-            sensor = ultrasonic.Sensor(sensor_config['trigger_pin'], sensor_config['echo_pin'], "ultrasonic")
+            trigger_pin = int(sensor_config['trigger_pin'])
+            echo_pin = int(sensor_config['echo_pin'])
+            log.info("Setting up %s on trigger %d and echo %d", sensor_name, trigger_pin, echo_pin)
+            sensor = ultrasonic.Sensor(trigger_pin, echo_pin, sensor_name)
             q = self.sensor_queues[position] = queue.Queue()
             self.distances[position] = collections.deque([], self.N_SAMPLES)
             sensor_thread = threading.Thread(target=self.distance_sensor, args=(sensor, q))
@@ -54,19 +53,31 @@ class Controller(remote.Controller):
            super().dispatch(action, params) 
     
     def distance_sensor(self, sensor, queue):
+        log.info("About to enable sensor %s", sensor)
         sensor.steady_trigger()
         while not self.finished():
             distance = sensor.find_distance_mm()
             queue.put(distance)
     
     def handle_start(self):
+        log.info("Starting up sensor threads")
         for sensor_thread in self.sensor_threads:
             sensor_thread.start()
         self.started = True
         
+        #
+        # Wait until we start to get readings from the
+        # sensor before setting off
+        #
+        log.info("Waiting for first readings")
+        while self.current_distance(self.distances['right']) is None:
+            self.read_distances()
+        
+        log.info("Moving robot forward")
         self.robot.forward()
     
     def handle_stop(self):
+        log.info("About to stop")
         self.robot.stop()
         self.started = False
         self.finish()
@@ -90,12 +101,7 @@ class Controller(remote.Controller):
         if robust_distances:
             return robust_distances[-1]
         else:
-            return PROXIMITY_THRESHOLD + 1
-    
-    def effective_offset(self):
-        left_distance = current_distance(self.distances["left"])
-        right_distance = current_distance(self.distances["right"])
-        return left_distance - right_distance            
+            return None
     
     def generate_commands(self):
         #
@@ -105,27 +111,23 @@ class Controller(remote.Controller):
         #
         # Pick up the latest movements recorded from the lateral sensors
         #
+        t0 = time.time()
         self.read_distances()
         distance = self.current_distance(self.distances['right'])
-        print("Distance:", distance)
+
+        log.debug("Current distance: %s", distance)
+        #~ if time.time() - t0 > 5:
         if distance < PROXIMITY_THRESHOLD:
+            log.info("Distance below proximity threshold; stopping")
             self.handle_stop()
 
     #
     # Main loop
     #
     def run(self):
-        """Handle robot commands placed on the queue by the .generate_commands
-        processor specific to this programme. 
+        """Since we don't seem able to cope with remote commands
+        followed by local control, always start without waiting for
+        a remote instruction
         """
         self.handle_start()
-        while not self.finished():
-            try:
-                self.generate_commands()
-                self.handle_commands()
-            except KeyboardInterrupt:
-                log.warn("Closing Controller gracefully...")
-                self.stop_event.set()
-            except:
-                log.exception("Problem in Controller")
-                self.stop_event.set()
+        super().run()

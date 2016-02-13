@@ -24,6 +24,9 @@ class Sensor(object):
         self.trigger_pin = int(trigger_pin)
         self.echo_pin = int(echo_pin)
         self.initialise_pins()
+    
+    def __repr__(self):
+        return "<%s %s>" % (self.__class__.__name__, self.name)
 
     def initialise_pins(self):
         """Intialise the GPIO pins we're using
