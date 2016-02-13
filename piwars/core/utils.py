@@ -9,7 +9,7 @@ if statistics:
         # Discard major outliers
         # (Explanation from: http://www.wikihow.com/Calculate-Outliers)
         #
-        numbers = list(iterator)
+        numbers = [i for i in iterator if i > 0]
         q2 = statistics.median(numbers)
         q1 = statistics.median(n for n in numbers if n < q2)
         q3 = statistics.median(n for n in numbers if n > q2)
